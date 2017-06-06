@@ -28,7 +28,10 @@
           #+sbcl(sb-ext:*muffled-warnings* 'style-warning))
       (when (library-loaded-p lib)
         (status 1 "Closing foreign library ~a." name)
-        (close-library name)))))
+        (close-library name))
+      ;; Clear out deployment system data
+      (setf (library-path lib) NIL)
+      (setf (library-sources lib) NIL))))
 
 (define-hook (:boot foreign-libraries most-positive-fixnum) ()
   (status 0 "Reloading foreign libraries.")
