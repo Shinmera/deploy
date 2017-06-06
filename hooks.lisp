@@ -1,0 +1,62 @@
+#|
+ This file is a part of deploy
+ (c) 2017 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
+ Author: Nicolas Hafner <shinmera@tymoon.eu>
+|#
+
+(in-package #:org.shirakumo.deploy)
+
+(defvar *hooks* ())
+
+(defclass hook ()
+  ((name :initarg :name :accessor hook-name)
+   (type :initarg :type :accessor hook-type)
+   (function :initarg :function :accessor hook-function)
+   (priority :initarg :priority :accessor hook-priority))
+  (:default-initargs
+   :name (error "NAME required.")
+   :type (error "TYPE required.")
+   :function (constantly NIL)
+   :priority 0))
+
+(defun hook (type name)
+  (loop for hook in *hooks*
+        do (when (and (eql type (hook-type hook))
+                      (eql name (hook-name hook)))
+             (return hook))))
+
+(defun (setf hook) (hook type name)
+  (let ((hooks (list* hook (remove-hook type name))))
+    (setf *hooks* (sort hooks #'> :key #'hook-priority))
+    hook))
+
+(defun remove-hook (type name)
+  (setf *hooks* (loop for hook in *hooks*
+                      unless (and (eql type (hook-type hook))
+                                  (eql name (hook-name hook)))
+                      collect hook)))
+
+(defmacro define-hook ((type name &optional (priority 0)) args &body body)
+  (ecase type (:build) (:deploy) (:boot) (:quit))
+  `(let ((,name (hook ,type ',name)))
+     (unless ,name
+       (setf ,name
+             (setf (hook ,type ',name)
+                   (make-instance 'hook :name ',name :type ,type))))
+     (setf (hook-priority ,name) ,priority)
+     (setf (hook-function ,name) (flet ((,name ,args
+                                          ,@body))
+                                   #',name))))
+
+(defun run-hooks (type &rest args)
+  (loop for hook in *hooks*
+        do (when (eql type (hook-type hook))
+             (restart-case (apply (hook-function hook) args)
+               (report-error (err)
+                 :report "Print the error and continue running hooks."
+                 (status 1 "Error during ~a: ~a" type err))))))
+
+(defmacro define-resource-directory (name directory &key (copy-root T))
+  (let ((target (gensym "TARGET")))
+    `(define-hook (:deploy ,name) (,target)
+       (copy-directory-tree ,directory ,target :copy-root ,copy-root))))
