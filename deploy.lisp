@@ -26,7 +26,7 @@
   (dolist (lib (list-libraries))
     (let ((name (library-name lib))
           #+sbcl(sb-ext:*muffled-warnings* 'style-warning))
-      (when (library-loaded-p lib)
+      (when (library-open-p lib)
         (status 1 "Closing foreign library ~a." name)
         (close-library name))
       ;; Clear out deployment system data
@@ -37,7 +37,7 @@
   (status 0 "Reloading foreign libraries.")
   (flet ((maybe-load (lib)
            (let ((lib (ensure-library lib)))
-             (unless (or (library-loaded-p lib)
+             (unless (or (library-open-p lib)
                          (library-dont-load-p lib))
                (status 1 "Loading foreign library ~a." lib)
                (open-library lib)))))
@@ -111,7 +111,7 @@
 
 (defmethod asdf:perform ((o deploy-op) (c asdf:system))
   (status 0 "Gathering system information.")
-  (setf *foreign-libraries-to-reload* (remove-if-not #'library-loaded-p
+  (setf *foreign-libraries-to-reload* (remove-if-not #'library-open-p
                                                      (remove-if #'library-dont-load-p (list-libraries))))
   (status 1 "Will load the following foreign libs on boot:  ~s" *foreign-libraries-to-reload*)
   (status 0 "Deploying files.")

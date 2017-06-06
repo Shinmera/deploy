@@ -79,7 +79,7 @@
   (cffi:close-foreign-library
    (library-name library)))
 
-(defmethod library-loaded-p ((library library))
+(defmethod library-open-p ((library library))
   (cffi:foreign-library-loaded-p library))
 
 (defmacro define-library (name &body initargs)
