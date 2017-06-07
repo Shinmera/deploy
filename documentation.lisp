@@ -233,7 +233,7 @@ See *HOOKS*
 See HOOK-FUNCTION
 See DEFINE-HOOK")
 
-  (function define-source-directory
+  (function define-resource-directory
     "Shorthand to define a hook that simply deploys the given directory.
 
 See DEFINE-HOOK
