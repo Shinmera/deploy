@@ -155,8 +155,8 @@ FILE.
 See <a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a>
 See <a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a>
 See <a href="#DEPLOY:LIBRARY-PATH">LIBRARY-PATH</a>
-See <a href="NIL">LIBRARY-DONT-OPEN-P</a>
-See <a href="NIL">LIBRARY-DONT-DEPLOY-P</a>
+See <a href="#DEPLOY:LIBRARY-DONT-OPEN-P">LIBRARY-DONT-OPEN-P</a>
+See <a href="#DEPLOY:LIBRARY-DONT-DEPLOY-P">LIBRARY-DONT-DEPLOY-P</a>
 See <a href="#DEPLOY:FIND-SOURCE-FILE">FIND-SOURCE-FILE</a></pre></div> </article> </li><li> <a name="DEPLOY:OSX-APP-DEPLOY-OP"> </a> <article> <header class="class"> <span class="type">class</span>  <h4 class="name"><code><a href="#DEPLOY:OSX-APP-DEPLOY-OP">OSX-APP-DEPLOY-OP</a></code></h4>  </header> <div class="docstring"><pre>This deployment op generates an OS X app bundle.
 
 See <a href="#DEPLOY:DEPLOY-OP">DEPLOY-OP</a>
@@ -185,7 +185,11 @@ See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DE
 
 The type can be one of :BUILD :DEPLOY :BOOT :QUIT.
 
-See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-PATH"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-PATH">LIBRARY-PATH</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the definite path to the library's source file.
+See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-DONT-DEPLOY-P"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-DONT-DEPLOY-P">LIBRARY-DONT-DEPLOY-P</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to whether to deploy (copy) the library to the resources directory on build.
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-DONT-OPEN-P"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-DONT-OPEN-P">LIBRARY-DONT-OPEN-P</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to whether the library should not be opened on boot.
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-PATH"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-PATH">LIBRARY-PATH</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the definite path to the library's source file.
 
 If this is NIL, the library could not be found.
 
@@ -275,29 +279,45 @@ See <a href="NIL">UIOP:ARGV0</a></pre></div> </article> </li><li> <a name="DEPLO
 The level determines the granularity of the message.
 Higher levels mean &quot;more detailed&quot;.</pre></div> </article> </li><li> <a name="DEPLOY:CLOSE-LIBRARY"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:CLOSE-LIBRARY">CLOSE-LIBRARY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Close/unload the library.
 
-See <a href="NIL">CFFI:CLOSE-FOREIGN-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:FIND-SOURCE-FILE"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:FIND-SOURCE-FILE">FIND-SOURCE-FILE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Attempt to find the source file of the library on the system.
+See <a href="NIL">CFFI:CLOSE-FOREIGN-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:DISCOVER-ENTRY-POINT"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:DISCOVER-ENTRY-POINT">DISCOVER-ENTRY-POINT</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OP C</code><code>)</code>  </header> <div class="docstring"><pre>Attempt to resolve the given ASDF system's entry point to a function.
 
-The following directories are searched:
-- The LIBRARY-SOURCES of the library.
-- The directory tree of the LIBRARY-SYSTEM's source.
-- The CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
-- The *SYSTEM-SOURCE-DIRECTORIES*
+The entry point may be either a function or a class
+designator. If a class, returned is a function that
+simply instantiates the class.
+
+See <a href="NIL">ASDF/SYSTEM:COMPONENT-ENTRY-POINT</a></pre></div> </article> </li><li> <a name="DEPLOY:FIND-SOURCE-FILE"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:FIND-SOURCE-FILE">FIND-SOURCE-FILE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Attempt to find the source file of the library on the system.
+
+Uses the directories listed in POSSIBLE-DIRECTORIES
+to look for the library source.
 
 The directories are searched for pathnames that
 match one of the POSSIBLE-PATHNAMES for the library.
 
-See <a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a>
-See <a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a>
-See <a href="NIL">DISCOVER-SUBDIRECTORIES</a>
-See <a href="NIL">CFFI:*FOREIGN-LIBRARY-DIRECTORIES*</a>
-See <a href="#DEPLOY:*SYSTEM-SOURCE-DIRECTORIES*">*SYSTEM-SOURCE-DIRECTORIES*</a>
+See <a href="#DEPLOY:POSSIBLE-DIRECTORIES">POSSIBLE-DIRECTORIES</a>
 See <a href="#DEPLOY:POSSIBLE-PATHNAMES">POSSIBLE-PATHNAMES</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-NAME"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-NAME">LIBRARY-NAME</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return the library's name.
 
 See <a href="NIL">CFFI:FOREIGN-LIBRARY-NAME</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-OPEN-P"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-OPEN-P">LIBRARY-OPEN-P</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Returns whether the library is currently open.
 
 See <a href="NIL">CFFI:FOREIGN-LIBRARY-LOADED-P</a></pre></div> </article> </li><li> <a name="DEPLOY:OPEN-LIBRARY"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:OPEN-LIBRARY">OPEN-LIBRARY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Open/load the library.
 
-See <a href="NIL">CFFI:LOAD-FOREIGN-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:POSSIBLE-PATHNAMES"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:POSSIBLE-PATHNAMES">POSSIBLE-PATHNAMES</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return a list of possible file pathnames that match the library.
+See <a href="NIL">CFFI:LOAD-FOREIGN-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:POSSIBLE-DIRECTORIES"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:POSSIBLE-DIRECTORIES">POSSIBLE-DIRECTORIES</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return a list of possible directories to search for the library.
+
+By default this list includes:
+- The LIBRARY-SOURCES of the library.
+- The directory tree of the LIBRARY-SYSTEM's source.
+- The CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
+- The *SYSTEM-SOURCE-DIRECTORIES*
+- The paths from the following environment variables:
+  - PATH on Windows
+  - LD_LIBRARY_PATH on Linux
+  - DYLD_LIBRARY_PATH on Darwin
+
+See <a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a>
+See <a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a>
+See <a href="NIL">DISCOVER-SUBDIRECTORIES</a>
+See <a href="NIL">CFFI:*FOREIGN-LIBRARY-DIRECTORIES*</a>
+See <a href="#DEPLOY:*SYSTEM-SOURCE-DIRECTORIES*">*SYSTEM-SOURCE-DIRECTORIES*</a>
+See <a href="NIL">ENV-PATHS</a></pre></div> </article> </li><li> <a name="DEPLOY:POSSIBLE-PATHNAMES"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:POSSIBLE-PATHNAMES">POSSIBLE-PATHNAMES</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return a list of possible file pathnames that match the library.
 
 By default this list includes:
 - The CFFI:FOREIGN-LIBRARY-PATHNAME if present.
