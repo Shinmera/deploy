@@ -6,7 +6,7 @@
 
 (in-package #:org.shirakumo.deploy)
 
-(defvar *system-source-directories*
+(defparameter *system-source-directories*
   (list #+windows #p"C:/Windows/system32/"
         #+(and windows x86) #p"C:/Windows/SysWoW64/"
         #+unix #p"/usr/lib/"
@@ -28,26 +28,19 @@
      (ensure-library (cffi::get-foreign-library library)))))
 
 (defclass library (cffi:foreign-library)
-  ((system :initarg :system :accessor library-system)
-   (sources :initarg :sources :accessor library-sources)
-   (path :initarg :path :accessor library-path)
-   (dont-load :initarg :dont-load :accessor library-dont-load-p)
-   (dont-copy :initarg :dont-copy :accessor library-dont-copy-p))
-  (:default-initargs
-   :system NIL
-   :sources ()
-   :path NIL
-   :dont-load NIL
-   :dont-copy NIL))
+  ((system :initarg :system :initform NIL :accessor library-system)
+   (sources :initarg :sources :initform () :accessor library-sources)
+   (path :initarg :path :initform NIL :accessor library-path)
+   (dont-load :initarg :dont-load :initform NIL :accessor library-dont-load-p)
+   (dont-copy :initarg :dont-copy :initform NIL :accessor library-dont-copy-p)))
 
 (defmethod print-object ((library library) stream)
   (print-unreadable-object (library stream :type T)
-    (foramt stream "~a" (library-name library))))
+    (format stream "~a" (library-name library))))
 
 (defmethod possible-pathnames ((library library))
   (list (cffi:foreign-library-pathname library)
-        (make-lib-pathname (library-name library))
-        (make-lib-pathname (format NIL "*~a*" (library-name library)))))
+        (make-lib-pathname (format NIL "*~(~a~)*" (library-name library)))))
 
 (defmethod find-source-file ((library library))
   (let ((sources (append (library-sources library)

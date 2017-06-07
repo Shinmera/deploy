@@ -44,7 +44,7 @@
              (setf (hook ,type ',name)
                    (make-instance 'hook :name ',name :type ,type))))
      (setf (hook-priority ,name) ,priority)
-     (setf (hook-function ,name) (flet ((,name ,args
+     (setf (hook-function ,name) (flet ((,name (&key ,@args &allow-other-keys)
                                           ,@body))
                                    #',name))))
 

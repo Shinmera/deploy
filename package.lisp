@@ -13,6 +13,17 @@
    #:*data-location*
    #:quit
    #:deploy-op)
+  ;; hooks.lisp
+  (:export
+   #:hook
+   #:hook-name
+   #:hook-type
+   #:hook-function
+   #:hook-priority
+   #:remove-hook
+   #:define-hook
+   #:run-hooks
+   #:define-resource-directory)
   ;; library.lisp
   (:export
    #:*system-source-directories*
@@ -31,6 +42,11 @@
    #:close-library
    #:library-open-p
    #:define-library)
+  ;; osx.lisp
+  (:export
+   #:*info-plist-template*
+   #:osx-app-deploy-op
+   #:parse-info-plist)
   ;; toolkit.lisp
   (:export
    #:status

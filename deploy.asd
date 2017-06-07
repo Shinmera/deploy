@@ -18,6 +18,7 @@
                (:file "library")
                (:file "hooks")
                (:file "deploy")
+               (:file "osx")
                (:file "documentation"))
   :depends-on (:cffi
                :trivial-features))

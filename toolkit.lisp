@@ -6,10 +6,30 @@
 
 (in-package #:org.shirakumo.deploy)
 
+(defun find-relative-path-to (target source)
+  (let ((directory (list :relative))
+        (temp (make-pathname :directory (copy-list (pathname-directory source))
+                             :defaults source)))
+    (loop until (loop for a in (rest (pathname-directory target))
+                      for b in (rest (pathname-directory temp))
+                      always (equal a b))
+          do (unless (rest (pathname-directory temp))
+               (error "Cannot find a relative path from ~a to ~a." source target))
+             (push :up directory)
+             (setf temp (make-pathname :directory (butlast (pathname-directory temp))
+                                       :defaults temp)))
+    (loop for dir in (nthcdr (length (pathname-directory temp))
+                             (pathname-directory target))
+          do (push dir directory))
+    (make-pathname :directory (nreverse directory)
+                   :host (pathname-host target)
+                   :device (pathname-device target))))
+
 (defun make-lib-pathname (name)
-  (make-pathname :name name :type #+linux "so"
-                                  #+darwin "dylib"
-                                  #+windows "dll"))
+  (make-pathname :name (string name)
+                 :type #+linux "so"
+                       #+darwin "dylib"
+                       #+windows "dll"))
 
 (defun pathname-filename (path)
   (format NIL "~a~@[.~a~]"
@@ -70,3 +90,12 @@
         (r source target)
         (dolist (subpath (directory-contents source))
           (r subpath target)))))
+
+(defun xml-escape (string)
+  (with-output-to-string (out)
+    (loop for c across string
+          do (case c
+               (#\< (format out "&lt;"))
+               (#\> (format out "&gt;"))
+               (#\& (format out "&amp;"))
+               (T (write-char c out))))))
