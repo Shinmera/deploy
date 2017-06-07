@@ -1,0 +1,370 @@
+<!DOCTYPE html> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <meta charset="utf-8"/> <title>Deploy</title> <meta name="viewport" content="width=device-width"/> <meta name="description" content="Tools to aid in the deployment of a fully standalone application."/> <meta name="author" content="Nicolas Hafner &lt;shinmera@tymoon.eu&gt;"/> <style type="text/css"> body{
+          max-width: 1024px;
+          margin: 0 auto 0 auto;
+          font-family: sans-serif;
+          color: #333333;
+          font-size: 14pt;
+          padding: 5px;
+      }
+      body>header{
+          display:flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          max-width: 100%;
+          text-align: center;
+      }
+      body>header img{
+          max-width: 50%;
+      }
+      img{
+          max-width: 100%;
+          max-height: 100%;
+      }
+      code{
+          font-family: Consolas, Inconsolata, monospace;
+      }
+      a{
+          text-decoration: none;
+          color: #0055AA;
+      }
+      a img{
+          border: none;
+      }
+      #documentation{
+          text-align: justify;
+      }
+      #documentation pre{
+          margin-left: 20px;
+          overflow: auto;
+      }
+      #documentation img{
+          margin: 5px;
+      }
+      #symbol-index>ul{
+          list-style: none;
+          padding: 0;
+      }
+      #symbol-index .package>ul{
+          list-style: none;
+          padding: 0 0 0 10px;
+      }
+      #symbol-index .package .nicknames{
+          font-weight: normal;
+      }
+      #symbol-index .package h4{
+          display: inline-block;
+          margin: 0;
+      }
+      #symbol-index .package article{
+          margin: 0 0 15px 0;
+      }
+      #symbol-index .package article header{
+          font-size: 1.2em;
+          font-weight: normal;
+      }
+      #symbol-index .package .name{
+          margin-right: 5px;
+      }
+      #symbol-index .package .docstring{
+          margin: 0 0 0 15px;
+          white-space: pre-wrap;
+          font-size: 12pt;
+      }
+      @media (max-width: 800px){
+          body{font-size: 12pt;}
+      } </style> </head> <body> <header> <h1>deploy</h1> <span class="version">1.0.0</span> <p class="description">Tools to aid in the deployment of a fully standalone application.</p> </header> <main> <article id="documentation">  <div><h2>About Deploy</h2> <p>This is a system to help you easily and quickly deploy standalone common lisp applications as binaries. Specifically it is geared towards applications with foreign library dependencies that run some kind of GUI.</p> <h2>How To</h2> <p>In order to make use of Deploy, you'll have to change the ASDF system definition of your project to contain the following properties:</p> <pre><code>:defsystem-depends-on (:deploy)
+:build-operation &quot;deploy-op&quot;
+:build-pathname &quot;my-application-name&quot;
+:entry-point &quot;my-package:my-start-function&quot;
+</code></pre> <p>Once you have updated your system appropriately, all you need to do is start a fresh instance of your implementation from a terminal and run the following function:</p> <pre><code>(asdf:operate :build-op :my-system)
+</code></pre> <p>This will build your system, gather the necessary information, and deploy a standalone <code>bin</code> folder within your project's root directory. You can then ship this folder to your users.</p> <h2>Customising Foreign Libraries</h2> <p>Sometimes you might want to designate a specific library for deployment, rather than the one used during development. If this is the case, you have to help Deploy out a little by defining extra information about the library with <code><a href="#DEPLOY:DEFINE-LIBRARY">define-library</a></code>. If the foreign library is in the source tree of a lisp library, you can simply associate the CFFI library with the system that provides it, and Deploy will find it automatically:</p> <pre><code>(<a href="#DEPLOY:DEFINE-LIBRARY">deploy:define-library</a> cffi-library-symbol
+  :system :system-name-that-defines-the-library)
+</code></pre> <p>For example, the <a href="https://github.com/Shirakumo/cl-mpg123">cl-mpg123</a> system provides a single library, which we would annotate like this:</p> <pre><code>(<a href="#DEPLOY:DEFINE-LIBRARY">deploy:define-library</a> cl-mpg123-cffi:libmpg123
+  :system :cl-mpg123)
+</code></pre> <p>If the file is not contained in the directory of the system that provides it, you can also designate specific source directories to scan:</p> <pre><code>(<a href="#DEPLOY:DEFINE-LIBRARY">deploy:define-library</a> cffi-library-symbol
+  :sources '(&quot;/some/path/where/the/library/is/stored/&quot;)) 
+</code></pre> <p>Finally, you can also specify the path directly if you want Deploy to choose a particular file, rather than trying to find one on its own:</p> <pre><code>(<a href="#DEPLOY:DEFINE-LIBRARY">deploy:define-library</a> cffi-library-symbol
+  :path &quot;/some/path/to/the/file.so&quot;)
+</code></pre> <p>Generally though these extra associations should not be necessary as Deploy will simply take the path that CFFI has already figured out to find the library.</p> <p>Sometimes it might not be desired to deploy all the libraries, or reload them all upon boot. You can change this behaviour with <code><a href="#DEPLOY:DEFINE-LIBRARY">define-library</a></code>'s <code>:dont-deploy</code> and <code>:dont-open</code> properties respectively.</p> <h2>Extending Deployment and Boot Behaviour</h2> <p>Deploy also offers a hooks system with which you can easily extend the steps performed during deployment and during the boot process of the generated executable. With the <code><a href="#DEPLOY:DEFINE-HOOK">define-hook</a></code> macro you can add functions that are executed during various points of the process. Specifically, the following types are available:</p> <ul> <li><code>:deploy</code> These functions are responsible for copying files into the deployment target directory.</li> <li><code>:build</code> These functions should prepare the system for the dump to binary. Specifically you might want to shut down existing threads, close file handles, remove unneeded baggage, and remove potentially sensitive information about your system.</li> <li><code>:boot</code> These functions are run right before the primary entry point is executed. Thus they are responsible for preparing the runtime to continue by restarting threads, re-opening files, and so forth.</li> <li><code>:quit</code> These functions are run right before the executable exits completely. They offer a last-minute opportunity to dump some information about the system, or to clean up vital resources.</li> </ul> <p>If you would simply like to include a data directory to bundle with the rest, use <code><a href="#DEPLOY:DEFINE-RESOURCE-DIRECTORY">define-resource-directory</a></code>. After boot, all of the resource files will be in the directory returned by <code><a href="#DEPLOY:DATA-DIRECTORY">data-directory</a></code>.</p> <h2>Deploying to an OS X App Bundle</h2> <p>If you would like a nicely bundled <code>.app</code> for OS X, you can simply change the <code>build-operation</code> in your ASDF system file to <code><a href="#DEPLOY:OSX-APP-DEPLOY-OP">osx-app-deploy-op</a></code>. If you would like to customise the <code>Info.plist</code> file that is generated for the app, you can change <code><a href="#DEPLOY:*INFO-PLIST-TEMPLATE*">*info-plist-template*</a></code> to point to a file that contains what you want.</p> <h2>Debugging a Deployed Executable</h2> <p>If you're having trouble with an application that's already deployed, there's a few things you can do to debug it by setting environment variables. The following are recognised by Deploy:</p> <ul> <li><code>DEPLOY_DEBUG_BOOT</code> if set to a non-empty value, on error the debugger is invoked rather than just exiting the application.</li> <li><code>DEPLOY_REDIRECT_OUTPUT</code> if set to a file path, the output of all streams is redirected to this file.</li> </ul> <p>Particularly on Windows and OS X debugging can be an issue, as a GUI application will not get a standard output to write to. In that case, the above redirect might help. Alternatively, on Windows, you can build your binary with the feature flag <code>:deploy-console</code> present, which will force it to deploy as a console application.</p> </div>  </article> <article id="copyright">  <h2>Copyright</h2> <span>deploy</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=Artistic">Artistic</a></span> license.  © <span>Nicolas Hafner &lt;shinmera@tymoon.eu&gt;</span> .  This library can be obtained on <a href="https://github.com/Shinmera/deploy">https://github.com/Shinmera/deploy</a>.  </article>  <article id="symbol-index"> <h2>Package Index</h2> <ul><li class="package"> <h3> <a name="DEPLOY" href="#DEPLOY">DEPLOY</a> <span class="nicknames">(ORG.SHIRAKUMO.DEPLOY)</span> </h3> <ul><li> <a name="DEPLOY:*DATA-LOCATION*"> </a> <article> <header class="special"> <span class="type">special</span>  <h4 class="name"><code><a href="#DEPLOY:*DATA-LOCATION*">*DATA-LOCATION*</a></code></h4>  </header> <div class="docstring"><pre>Relative path designating the location of the resource directory.
+
+This path should be relative to the location of
+the executable.
+
+You may set this variable before deployment to
+influence where resource files are stored.
+
+See <a href="#DEPLOY:DATA-DIRECTORY">DATA-DIRECTORY</a></pre></div> </article> </li><li> <a name="DEPLOY:*INFO-PLIST-TEMPLATE*"> </a> <article> <header class="special"> <span class="type">special</span>  <h4 class="name"><code><a href="#DEPLOY:*INFO-PLIST-TEMPLATE*">*INFO-PLIST-TEMPLATE*</a></code></h4>  </header> <div class="docstring"><pre>This variable holds a pathname pointing to the Info.plist template to use for OS X app bundles.
+
+See <a href="#DEPLOY:PARSE-INFO-PLIST">PARSE-INFO-PLIST</a></pre></div> </article> </li><li> <a name="DEPLOY:*SYSTEM-SOURCE-DIRECTORIES*"> </a> <article> <header class="special"> <span class="type">special</span>  <h4 class="name"><code><a href="#DEPLOY:*SYSTEM-SOURCE-DIRECTORIES*">*SYSTEM-SOURCE-DIRECTORIES*</a></code></h4>  </header> <div class="docstring"><pre>This variable holds a list of paths to system library directories.
+
+Deploy will search through these paths to attempt to
+find the source of libraries if the more explicitly
+provided paths should fail.</pre></div> </article> </li><li> <a name="DEPLOY:DEPLOY-OP"> </a> <article> <header class="class"> <span class="type">class</span>  <h4 class="name"><code><a href="#DEPLOY:DEPLOY-OP">DEPLOY-OP</a></code></h4>  </header> <div class="docstring"><pre>An ASDF operation to perform a deployment.
+
+When this operation is performed, the following steps
+are taken:
+
+1. The output files are determined, which should be
+   a list of two paths, the first being the executable
+   to dump to, and the second being a directory where
+   all the resources should be stored.
+2. The list of libraries to reload on boot is computed
+   by removing all libraries that are either marked as
+   dont-open, or aren't yet opened from LIST-LIBRARIES.
+3. The deployment directories are created.
+4. The *DATA-LOCATION* path is adapted to be relative
+   to the binary file.
+5. The :DEPLOY hooks are run with the appropriate
+   arguments.
+6. The :BUILD hooks are run with the appropriate
+   arguments.
+7. The image is dumped to an executable format, using
+   core compression if available, and using the
+   appropriate application type depending on the
+   presence of the operating system and the
+   :DEPLOY-CONSOLE feature flag.
+
+See <a href="#DEPLOY:LIST-LIBRARIES">LIST-LIBRARIES</a>
+See <a href="NIL">*FOREIGN-LIBRARIES-TO-RELOAD*</a>
+See <a href="#DEPLOY:*DATA-LOCATION*">*DATA-LOCATION*</a>
+See <a href="NIL">FIND-RELATIVE-PATH-TO</a>
+See <a href="#DEPLOY:RUN-HOOKS">RUN-HOOKS</a></pre></div> </article> </li><li> <a name="DEPLOY:HOOK"> </a> <article> <header class="class"> <span class="type">class</span>  <h4 class="name"><code><a href="#DEPLOY:HOOK">HOOK</a></code></h4>  </header> <div class="docstring"><pre>This class encapsulates a hook.
+
+Hooks are functions that are run during various
+points of deployment and execution of the resulting
+executable.
+
+See <a href="#DEPLOY:HOOK-NAME">HOOK-NAME</a>
+See <a href="#DEPLOY:HOOK-TYPE">HOOK-TYPE</a>
+See <a href="#DEPLOY:HOOK-FUNCTION">HOOK-FUNCTION</a>
+See <a href="#DEPLOY:HOOK-PRIORITY">HOOK-PRIORITY</a>
+See <a href="#DEPLOY:HOOK">HOOK</a>
+See <a href="#DEPLOY:REMOVE-HOOK">REMOVE-HOOK</a>
+See <a href="#DEPLOY:DEFINE-HOOK">DEFINE-HOOK</a>
+See <a href="#DEPLOY:RUN-HOOKS">RUN-HOOKS</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY"> </a> <article> <header class="class"> <span class="type">class</span>  <h4 class="name"><code><a href="#DEPLOY:LIBRARY">LIBRARY</a></code></h4>  </header> <div class="docstring"><pre>Class to represent a foreign library.
+
+This is a subclass of CFFI:FOREIGN-LIBRARY with some
+additional slots for information necessary for the
+Deploy system.
+
+Upon shared-initialize, if the LIBRARY-PATH is not
+explicitly set, it is resolved through FIND-SOURCE-
+FILE.
+
+See <a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a>
+See <a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a>
+See <a href="#DEPLOY:LIBRARY-PATH">LIBRARY-PATH</a>
+See <a href="NIL">LIBRARY-DONT-OPEN-P</a>
+See <a href="NIL">LIBRARY-DONT-DEPLOY-P</a>
+See <a href="#DEPLOY:FIND-SOURCE-FILE">FIND-SOURCE-FILE</a></pre></div> </article> </li><li> <a name="DEPLOY:OSX-APP-DEPLOY-OP"> </a> <article> <header class="class"> <span class="type">class</span>  <h4 class="name"><code><a href="#DEPLOY:OSX-APP-DEPLOY-OP">OSX-APP-DEPLOY-OP</a></code></h4>  </header> <div class="docstring"><pre>This deployment op generates an OS X app bundle.
+
+See <a href="#DEPLOY:DEPLOY-OP">DEPLOY-OP</a>
+See <a href="#DEPLOY:PARSE-INFO-PLIST">PARSE-INFO-PLIST</a>
+See <a href="#DEPLOY:*INFO-PLIST-TEMPLATE*">*INFO-PLIST-TEMPLATE*</a></pre></div> </article> </li><li> <a name="DEPLOY:HOOK"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:HOOK">HOOK</a></code></h4> <code class="qualifiers"></code> <code class="arguments">TYPE NAME</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the hook instance of the given type and name.
+
+See <a href="NIL">*HOOKS*</a>
+See <a href="#DEPLOY:HOOK">HOOK</a>
+See <a href="#DEPLOY:REMOVE-HOOK">REMOVE-HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:HOOK-FUNCTION"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:HOOK-FUNCTION">HOOK-FUNCTION</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the function of the hook.
+
+This function is what is executed when RUN-HOOKS
+is called.
+
+See <a href="#DEPLOY:HOOK">HOOK</a>
+See <a href="#DEPLOY:RUN-HOOKS">RUN-HOOKS</a></pre></div> </article> </li><li> <a name="DEPLOY:HOOK-NAME"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:HOOK-NAME">HOOK-NAME</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the name of the hook.
+
+The name should be a symbol.
+
+See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:HOOK-PRIORITY"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:HOOK-PRIORITY">HOOK-PRIORITY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the priority of the hook.
+
+The priority should be an integer.
+The higher the priority, the earlier the hook is
+executed.
+
+See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:HOOK-TYPE"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:HOOK-TYPE">HOOK-TYPE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the type of the hook.
+
+The type can be one of :BUILD :DEPLOY :BOOT :QUIT.
+
+See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-PATH"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-PATH">LIBRARY-PATH</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the definite path to the library's source file.
+
+If this is NIL, the library could not be found.
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-SOURCES"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the list of additional paths to search for source files.
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-SYSTEM"> </a> <article> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a></code></h4> <code class="qualifiers"></code> <code class="arguments">OBJECT</code><code>)</code>  </header> <div class="docstring"><pre>Accessor to the ASDF system associated with the library.
+
+If there is a system associated with this library,
+the system's source tree is used to search for the
+library's source file.
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:COPY-DIRECTORY-TREE"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:COPY-DIRECTORY-TREE">COPY-DIRECTORY-TREE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">SOURCE TARGET &amp;KEY (COPY-ROOT T)</code><code>)</code>  </header> <div class="docstring"><pre>Copy the source directory to the target directory.
+
+If COPY-ROOT is true, the source folder itself is
+copied, otherwise only its contents are copied.</pre></div> </article> </li><li> <a name="DEPLOY:DATA-DIRECTORY"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:DATA-DIRECTORY">DATA-DIRECTORY</a></code></h4> <code class="qualifiers"></code> <code class="arguments"></code><code>)</code>  </header> <div class="docstring"><pre>Return an absolute path to the resource directory.
+
+See <a href="#DEPLOY:DATA-DIRECTORY">DATA-DIRECTORY</a></pre></div> </article> </li><li> <a name="DEPLOY:ENSURE-LIBRARY"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:ENSURE-LIBRARY">ENSURE-LIBRARY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return the corresponding LIBRARY instance, if possible.
+
+The following happens for the following type of
+the argument:
+- LIBRARY               The argument is returned.
+- CFFI:FOREIGN-LIBRARY  The object is CHANGE-CLASSd
+                        into a LIBRARY instance.
+- SYMBOL                The library instance is
+                        retrieved by name and then
+                        passed back in.
+
+See <a href="NIL">CFFI::GET-FOREIGN-LIBRARY</a>
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:ENV-SET-P"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:ENV-SET-P">ENV-SET-P</a></code></h4> <code class="qualifiers"></code> <code class="arguments">ENVVAR</code><code>)</code>  </header> <div class="docstring"><pre>Returns the value of the given environment variable if it is set to a non-empty value.</pre></div> </article> </li><li> <a name="DEPLOY:LIST-LIBRARIES"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIST-LIBRARIES">LIST-LIBRARIES</a></code></h4> <code class="qualifiers"></code> <code class="arguments"></code><code>)</code>  </header> <div class="docstring"><pre>Return a fresh list of known foreign libraries.
+
+All the returned libraries will be of type LIBRARY.
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a>
+See <a href="NIL">CFFI:LIST-FOREIGN-LIBRARIES</a>
+See <a href="#DEPLOY:ENSURE-LIBRARY">ENSURE-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:PARSE-INFO-PLIST"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:PARSE-INFO-PLIST">PARSE-INFO-PLIST</a></code></h4> <code class="qualifiers"></code> <code class="arguments">SYSTEM &amp;OPTIONAL (TEMPLATE *INFO-PLIST-TEMPLATE*)</code><code>)</code>  </header> <div class="docstring"><pre>Parses the Info.plist file and replaces values as appropriate.
+
+Specifically, anything enclosed in [] is taken as a
+list of symbols designating functions to call with
+the system object. The resulting values are then
+turned into a string by PRINC-TO-STRING, and escaped
+for usage by XML-ESCAPED before writing them to
+the returned string in place of the []. Note that you
+can enclose multiple symbols. The value of the first
+function call that returns non-NIL is used as the
+value to splice into the file.
+
+This allows to conveniently fill an Info.plist
+template with values from the ASDF system.
+
+Have a look at the standard Info.plist file shipped
+with Deploy for what's possible.
+
+See <a href="#DEPLOY:*INFO-PLIST-TEMPLATE*">*INFO-PLIST-TEMPLATE*</a></pre></div> </article> </li><li> <a name="DEPLOY:QUIT"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:QUIT">QUIT</a></code></h4> <code class="qualifiers"></code> <code class="arguments">&amp;OPTIONAL SYSTEM OP</code><code>)</code>  </header> <div class="docstring"><pre>Runs the quit hooks and terminates the application.
+
+If an error occurs during the execution of a quit hook, it
+is ignored.
+
+See <a href="#DEPLOY:RUN-HOOKS">RUN-HOOKS</a></pre></div> </article> </li><li> <a name="DEPLOY:REDIRECT-OUTPUT"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:REDIRECT-OUTPUT">REDIRECT-OUTPUT</a></code></h4> <code class="qualifiers"></code> <code class="arguments">TARGET</code><code>)</code>  </header> <div class="docstring"><pre>Redirect all output to the given file.
+
+This changes *STANDARD-OUTPUT*, *ERROR-OUTPUT*,
+*TRACE-OUTPUT*, and *DEBUG-IO*. For the latter,
+only its output stream is changed.
+
+The stream to the given target file is returned.</pre></div> </article> </li><li> <a name="DEPLOY:REMOVE-HOOK"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:REMOVE-HOOK">REMOVE-HOOK</a></code></h4> <code class="qualifiers"></code> <code class="arguments">TYPE NAME</code><code>)</code>  </header> <div class="docstring"><pre>Remove the hook of the given type and name.
+
+See <a href="NIL">*HOOKS*</a>
+See <a href="#DEPLOY:HOOK">HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:RUN-HOOKS"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:RUN-HOOKS">RUN-HOOKS</a></code></h4> <code class="qualifiers"></code> <code class="arguments">TYPE &amp;REST ARGS</code><code>)</code>  </header> <div class="docstring"><pre>Run the hooks of the given type, supplying the given arguments.
+
+Refer to DEFINE-HOOKS for the recognised arguments for
+each hook type.
+
+This function simply iterates through *HOOKS*, checks the
+HOOK-TYPE for compliance, establishes a REPORT-ERROR
+restart, and then applies the HOOK-FUNCTION to the given
+arguments.
+
+The REPORT-ERROR restart simply prints out the error it
+receives and is thus useful for ignoring errors that
+might occur during the execution of a hook.
+
+See <a href="NIL">*HOOKS*</a>
+See <a href="#DEPLOY:HOOK-FUNCTION">HOOK-FUNCTION</a>
+See <a href="#DEPLOY:DEFINE-HOOK">DEFINE-HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:RUNTIME-DIRECTORY"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:RUNTIME-DIRECTORY">RUNTIME-DIRECTORY</a></code></h4> <code class="qualifiers"></code> <code class="arguments"></code><code>)</code>  </header> <div class="docstring"><pre>Returns a pathname to the directory where the executable is being run in.
+
+See <a href="NIL">UIOP:ARGV0</a></pre></div> </article> </li><li> <a name="DEPLOY:STATUS"> </a> <article> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:STATUS">STATUS</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LEVEL FORMAT-STRING &amp;REST FORMAT-ARGS</code><code>)</code>  </header> <div class="docstring"><pre>Print a status message to standard-output.
+
+The level determines the granularity of the message.
+Higher levels mean &quot;more detailed&quot;.</pre></div> </article> </li><li> <a name="DEPLOY:CLOSE-LIBRARY"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:CLOSE-LIBRARY">CLOSE-LIBRARY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Close/unload the library.
+
+See <a href="NIL">CFFI:CLOSE-FOREIGN-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:FIND-SOURCE-FILE"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:FIND-SOURCE-FILE">FIND-SOURCE-FILE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Attempt to find the source file of the library on the system.
+
+The following directories are searched:
+- The LIBRARY-SOURCES of the library.
+- The directory tree of the LIBRARY-SYSTEM's source.
+- The CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
+- The *SYSTEM-SOURCE-DIRECTORIES*
+
+The directories are searched for pathnames that
+match one of the POSSIBLE-PATHNAMES for the library.
+
+See <a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a>
+See <a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a>
+See <a href="NIL">DISCOVER-SUBDIRECTORIES</a>
+See <a href="NIL">CFFI:*FOREIGN-LIBRARY-DIRECTORIES*</a>
+See <a href="#DEPLOY:*SYSTEM-SOURCE-DIRECTORIES*">*SYSTEM-SOURCE-DIRECTORIES*</a>
+See <a href="#DEPLOY:POSSIBLE-PATHNAMES">POSSIBLE-PATHNAMES</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-NAME"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-NAME">LIBRARY-NAME</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return the library's name.
+
+See <a href="NIL">CFFI:FOREIGN-LIBRARY-NAME</a></pre></div> </article> </li><li> <a name="DEPLOY:LIBRARY-OPEN-P"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:LIBRARY-OPEN-P">LIBRARY-OPEN-P</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Returns whether the library is currently open.
+
+See <a href="NIL">CFFI:FOREIGN-LIBRARY-LOADED-P</a></pre></div> </article> </li><li> <a name="DEPLOY:OPEN-LIBRARY"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:OPEN-LIBRARY">OPEN-LIBRARY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Open/load the library.
+
+See <a href="NIL">CFFI:LOAD-FOREIGN-LIBRARY</a></pre></div> </article> </li><li> <a name="DEPLOY:POSSIBLE-PATHNAMES"> </a> <article> <header class="generic"> <span class="type">generic</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:POSSIBLE-PATHNAMES">POSSIBLE-PATHNAMES</a></code></h4> <code class="qualifiers"></code> <code class="arguments">LIBRARY</code><code>)</code>  </header> <div class="docstring"><pre>Return a list of possible file pathnames that match the library.
+
+By default this list includes:
+- The CFFI:FOREIGN-LIBRARY-PATHNAME if present.
+- Paths computed through the CFFI library's spec.
+- A generic path after the LIBRARY-NAME.
+
+See <a href="NIL">CFFI:FOREIGN-LIBRARY-PATHNAME</a>
+See <a href="NIL">CFFI:DEFINE-FOREIGN-LIBRARY</a>
+See <a href="#DEPLOY:LIBRARY-NAME">LIBRARY-NAME</a>
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a>
+See <a href="NIL">RESOLVE-CFFI-SPEC</a></pre></div> </article> </li><li> <a name="DEPLOY:DEFINE-HOOK"> </a> <article> <header class="macro"> <span class="type">macro</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:DEFINE-HOOK">DEFINE-HOOK</a></code></h4> <code class="qualifiers"></code> <code class="arguments">(TYPE NAME &amp;OPTIONAL (PRIORITY 0)) ARGS &amp;BODY BODY</code><code>)</code>  </header> <div class="docstring"><pre>Define a new hook function.
+
+The args list's arguments are automatically turned into
+keyword arguments for the hook function. This allows you
+to only specify the arguments that you are interested in.
+
+The following arguments are available for all hook types:
+- SYSTEM  The ASDF system object the application is built
+          with.
+- OP      The ASDF operation object used to build the
+          application.
+
+The following hook types are recognised:
+- :deploy  These functions are responsible for copying
+           files into the deployment target directory.
+           It supplies the following extra arguments:
+  - DIRECTORY  The target directory into which resource
+               files should be placed.
+
+- :build   These functions should prepare the system for
+           the dump to binary. Specifically you might
+           want to shut down existing threads, close file
+           handles, remove unneeded baggage, and remove
+           potentially sensitive information about your
+           system.
+
+- :boot    These functions are run right before the
+           primary entry point is executed. Thus they are
+           responsible for preparing the runtime to
+           continue by restarting threads, re-opening
+           files, and so forth.
+           It supplies the following extra arguments:
+  - DIRECTORY  The directory in which the resource files
+               now reside after boot.
+
+- :quit    These functions are run right before the
+           executable exits completely. They offer a
+           last-minute opportunity to dump some
+           information about the system, or to clean up
+           vital resources.
+
+See <a href="#DEPLOY:HOOK">HOOK</a>
+See <a href="#DEPLOY:REMOVE-HOOK">REMOVE-HOOK</a></pre></div> </article> </li><li> <a name="DEPLOY:DEFINE-LIBRARY"> </a> <article> <header class="macro"> <span class="type">macro</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:DEFINE-LIBRARY">DEFINE-LIBRARY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">NAME &amp;BODY INITARGS</code><code>)</code>  </header> <div class="docstring"><pre>Define additional properties for a foreign library.
+
+The NAME should be one of a valid CFFI foreign
+library as defined by CFFI:DEFINE-FOREIGN-LIBRARY.
+
+Valid properties are:
+- :SYSTEM
+- :SOURCES
+- :PATH    
+- :DONT-OPEN  
+- :DONT-DEPLOY
+
+See <a href="#DEPLOY:LIBRARY">LIBRARY</a>
+See <a href="#DEPLOY:LIBRARY-SYSTEM">LIBRARY-SYSTEM</a>
+See <a href="#DEPLOY:LIBRARY-SOURCES">LIBRARY-SOURCES</a>
+See <a href="#DEPLOY:LIBRARY-PATH">LIBRARY-PATH</a>
+See <a href="NIL">LIBRARY-DONT-OPEN</a>
+See <a href="NIL">LIBRARY-DONT-DEPLOY</a></pre></div> </article> </li><li> <a name="DEPLOY:DEFINE-RESOURCE-DIRECTORY"> </a> <article> <header class="macro"> <span class="type">macro</span>  <code>(</code><h4 class="name"><code><a href="#DEPLOY:DEFINE-RESOURCE-DIRECTORY">DEFINE-RESOURCE-DIRECTORY</a></code></h4> <code class="qualifiers"></code> <code class="arguments">NAME DIRECTORY &amp;KEY (COPY-ROOT T)</code><code>)</code>  </header> <div class="docstring"><i>No docstring provided.</i></div> </article> </li></ul> </li></ul> </article>  </main> </body> </html> 
