@@ -75,9 +75,7 @@
       (uiop:truenamize #p"")))
 
 (defun directory-contents (path)
-  (uiop:directory*
-   (merge-pathnames uiop:*wild-file*
-                    path)))
+  (uiop:directory* (merge-pathnames uiop:*wild-file* path)))
 
 (defun copy-directory-tree (source target &key (copy-root T))
   (labels ((r (path destination)

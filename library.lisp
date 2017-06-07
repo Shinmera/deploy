@@ -45,14 +45,18 @@
           (resolve-cffi-spec (slot-value library 'cffi::spec))
           (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library))))))
 
+(defmethod possible-directories ((library library))
+  ;; FIXME: LD_LIBRARY_PATH etc
+  (append (library-sources library)
+          (when (library-system library)
+            (discover-subdirectories
+             (asdf:system-source-directory
+              (library-system library))))
+          cffi:*foreign-library-directories*
+          *system-source-directories*))
+
 (defmethod find-source-file ((library library))
-  (let ((sources (append (library-sources library)
-                         (when (library-system library)
-                           (discover-subdirectories
-                            (asdf:system-source-directory
-                             (library-system library))))
-                         cffi:*foreign-library-directories*
-                         *system-source-directories*)))
+  (let ((sources (possible-directories library)))
     (dolist (path (possible-pathnames library))
       (when path
         (loop with filename = (pathname-filename path)

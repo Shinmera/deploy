@@ -11,7 +11,8 @@
   ;; deploy.lisp
   (:export
    #:quit
-   #:deploy-op)
+   #:deploy-op
+   #:discover-entry-point)
   ;; hooks.lisp
   (:export
    #:hook
@@ -33,8 +34,9 @@
    #:library-system
    #:library-sources
    #:library-path
-   #:library-dont-load-p
-   #:library-dont-copy-p
+   #:library-dont-open-p
+   #:library-dont-deploy-p
+   #:possible-directories
    #:possible-pathnames
    #:find-source-file
    #:library-name

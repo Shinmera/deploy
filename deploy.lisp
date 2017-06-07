@@ -86,7 +86,10 @@
       :report "Exit."
       (quit system op))))
 
-(defun discover-entry-point (c)
+(defclass deploy-op (asdf:program-op)
+  ())
+
+(defmethod discover-entry-point ((op deploy-op) (c asdf:system))
   (let ((entry (asdf/system:component-entry-point c)))
     (unless entry
       (error "~a does not specify an entry point." c))
@@ -96,12 +99,9 @@
             (class (lambda () (make-instance class)))
             (T (error "~a's  entry point ~a is not coercable to a class or function!" c entry))))))
 
-(defclass deploy-op (asdf:program-op)
-  ())
-
 ;; Do this before to trick ASDF's subsequent usage of UIOP:ENSURE-FUNCTION on the entry-point slot.
 (defmethod asdf:perform :before ((o deploy-op) (c asdf:system))
-  (let ((entry (discover-entry-point c)))
+  (let ((entry (discover-entry-point o c)))
     (setf (asdf/system:component-entry-point c)
           (lambda (&rest args)
             (declare (ignore args))
@@ -119,7 +119,8 @@
   (destructuring-bind (file data) (asdf:output-files o c)
     (setf *foreign-libraries-to-reload* (remove-if-not #'library-open-p
                                                        (remove-if #'library-dont-open-p (list-libraries))))
-    (status 1 "Will load the following foreign libs on boot:~%~s" *foreign-libraries-to-reload*)
+    (status 1 "Will load the following foreign libs on boot:
+      ~s" *foreign-libraries-to-reload*)
     (status 0 "Deploying files to ~a" data)
     (ensure-directories-exist file)
     (ensure-directories-exist data)
