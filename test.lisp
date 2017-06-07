@@ -12,12 +12,6 @@
    #:start))
 (in-package #:org.shirakumo.deploy.test)
 
-(deploy:define-library cl-mpg123-cffi:libmpg123
-  :system :cl-mpg123)
-
-(deploy:define-library cl-out123-cffi:libout123
-  :system :cl-out123)
-
 (defun start ()
   (let* ((file (or (first (uiop:command-line-arguments))
                    (error "Please pass a file to play.")))
