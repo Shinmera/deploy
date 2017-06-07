@@ -76,21 +76,22 @@
 
 (defun directory-contents (path)
   (uiop:directory*
-   (merge-pathnames (merge-pathnames uiop:*wild-file* uiop:*wild-directory*)
+   (merge-pathnames uiop:*wild-file*
                     path)))
 
 (defun copy-directory-tree (source target &key (copy-root T))
   (labels ((r (path destination)
              (cond ((uiop:directory-pathname-p path)
-                    (uiop:copy-file path (make-pathname :name (pathname-name path)
-                                                        :type (pathname-type path)
-                                                        :defaults destination)))
-                   (T
                     (let ((tpath (merge-pathnames (format NIL "~a/" (car (last (pathname-directory path))))
-                                                  path)))
+                                                  destination)))
                       (ensure-directories-exist tpath)
                       (dolist (subpath (directory-contents path))
-                        (r subpath tpath)))))))
+                        (r subpath tpath))))
+
+                   (T
+                    (uiop:copy-file path (make-pathname :name (pathname-name path)
+                                                        :type (pathname-type path)
+                                                        :defaults destination))))))
     (if copy-root
         (r source target)
         (dolist (subpath (directory-contents source))
