@@ -107,7 +107,7 @@
                (T (write-char c out))))))
 
 (defun system-applicable-p (system-spec)
-  (if (eql T system-spec)
+  (or (eql T system-spec)
       (member system-spec *features*)))
 
 (defun resolve-cffi-spec (spec)
@@ -124,7 +124,7 @@
                    (warn "Deploy does not currently support Darwin frameworks.")
                    ())
                   (:default
-                   (make-lib-pathname (second spec))))))))
+                   (list (make-lib-pathname (second spec)))))))))
     (loop for (system-spec spec) in spec
           when (system-applicable-p system-spec)
           append (resolve-inner-spec spec))))
