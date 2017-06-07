@@ -9,6 +9,7 @@
 (defparameter *system-source-directories*
   (list #+windows #p"C:/Windows/system32/"
         #+(and windows x86) #p"C:/Windows/SysWoW64/"
+        #+windows #p"C:/Windows/"
         #+unix #p"/usr/lib/"
         #+unix #p"/usr/lib/*/"
         #+unix #p"/usr/lib64/"
@@ -39,8 +40,10 @@
     (format stream "~a" (library-name library))))
 
 (defmethod possible-pathnames ((library library))
-  (list (cffi:foreign-library-pathname library)
-        (make-lib-pathname (format NIL "*~(~a~)*" (library-name library)))))
+  (append (when (cffi:foreign-library-pathname library)
+            (list (cffi:foreign-library-pathname library)))
+          (resolve-cffi-spec (slot-value library 'cffi::spec))
+          (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library))))))
 
 (defmethod find-source-file ((library library))
   (let ((sources (append (library-sources library)

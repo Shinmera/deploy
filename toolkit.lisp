@@ -43,7 +43,7 @@
 (defun discover-subdirectories (path)
   (labels ((r (path)
              (list* path (mapc #'r (uiop:subdirectories path)))))
-    (r path)))
+    (r (uiop:pathname-directory-pathname path))))
 
 (defun status (level format-string &rest format-args)
   (format T "~& ~a ~?~%" (case level
@@ -53,7 +53,7 @@
           format-string format-args))
 
 (defun env-set-p (envvar)
-  (let ((value (uiop:getenv "DEBUG_BOOT")))
+  (let ((value (uiop:getenv envvar)))
     (when (and value (string/= "" value))
       value)))
 
@@ -104,3 +104,26 @@
                (#\> (format out "&gt;"))
                (#\& (format out "&amp;"))
                (T (write-char c out))))))
+
+(defun system-applicable-p (system-spec)
+  (if (eql T system-spec)
+      (member system-spec *features*)))
+
+(defun resolve-cffi-spec (spec)
+  (labels ((resolve-inner-spec (spec)
+             (etypecase spec
+               ((or string pathname)
+                (list (pathname spec)))
+               (cons
+                (ecase (first spec)
+                  (:or
+                   (loop for other in (rest spec)
+                         append (resolve-inner-spec other)))
+                  (:framework
+                   (warn "Deploy does not currently support Darwin frameworks.")
+                   ())
+                  (:default
+                   (make-lib-pathname (second spec))))))))
+    (loop for (system-spec spec) in spec
+          when (system-applicable-p system-spec)
+          append (resolve-inner-spec spec))))

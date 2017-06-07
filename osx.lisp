@@ -41,7 +41,9 @@
                         (loop for symbol in list
                               for value = (funcall symbol system)
                               do (when value
-                                   (write-sequence (xml-escape value) out)
+                                   (write-sequence
+                                    (xml-escape (princ-to-string value))
+                                    out)
                                    (return)))))
                      (T
                       (write-char c out)))))))

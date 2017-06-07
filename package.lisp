@@ -22,6 +22,7 @@
    #:remove-hook
    #:define-hook
    #:run-hooks
+   #:report-error
    #:define-resource-directory)
   ;; library.lisp
   (:export

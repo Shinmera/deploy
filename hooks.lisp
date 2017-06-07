@@ -38,6 +38,8 @@
 
 (defmacro define-hook ((type name &optional (priority 0)) args &body body)
   (ecase type (:build) (:deploy) (:boot) (:quit))
+  (check-type name symbol)
+  (check-type priority integer)
   `(let ((,name (hook ,type ',name)))
      (unless ,name
        (setf ,name
@@ -46,7 +48,8 @@
      (setf (hook-priority ,name) ,priority)
      (setf (hook-function ,name) (flet ((,name (&key ,@args &allow-other-keys)
                                           ,@body))
-                                   #',name))))
+                                   #',name))
+     ',name))
 
 (defun run-hooks (type &rest args)
   (loop for hook in *hooks*
