@@ -335,23 +335,36 @@ See LIBRARY-NAME
 See LIBRARY
 See RESOLVE-CFFI-SPEC")
 
-  (function find-source-file
-    "Attempt to find the source file of the library on the system.
+  (function possible-directories
+    "Return a list of possible directories to search for the library.
 
-The following directories are searched:
+By default this list includes:
 - The LIBRARY-SOURCES of the library.
 - The directory tree of the LIBRARY-SYSTEM's source.
 - The CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
 - The *SYSTEM-SOURCE-DIRECTORIES*
-
-The directories are searched for pathnames that
-match one of the POSSIBLE-PATHNAMES for the library.
+- The paths from the following environment variables:
+  - PATH on Windows
+  - LD_LIBRARY_PATH on Linux
+  - DYLD_LIBRARY_PATH on Darwin
 
 See LIBRARY-SOURCES
 See LIBRARY-SYSTEM
 See DISCOVER-SUBDIRECTORIES
 See CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
 See *SYSTEM-SOURCE-DIRECTORIES*
+See ENV-PATHS")
+
+  (function find-source-file
+    "Attempt to find the source file of the library on the system.
+
+Uses the directories listed in POSSIBLE-DIRECTORIES
+to look for the library source.
+
+The directories are searched for pathnames that
+match one of the POSSIBLE-PATHNAMES for the library.
+
+See POSSIBLE-DIRECTORIES
 See POSSIBLE-PATHNAMES")
 
   (function library-name
@@ -526,4 +539,18 @@ returned if the system-spec is in *FEATURES*.")
 This is the spec as used in CFFI:DEFINE-FOREIGN-
 LIBRARY.
 
-See CFFI:DEFINE-FOREIGN-LIBRARY"))
+See CFFI:DEFINE-FOREIGN-LIBRARY")
+
+  (function split
+    "Split the string on each split character.
+
+Empty subsequences are not included.")
+
+  (function env-paths
+    "Returns the paths contained in the given environment variable.
+
+For Windows systems, the split character is ;
+otherwise it is :
+
+See SPLIT
+See UIOP:GETENV"))

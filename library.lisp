@@ -46,14 +46,17 @@
           (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library))))))
 
 (defmethod possible-directories ((library library))
-  ;; FIXME: LD_LIBRARY_PATH etc
+  ;; FIXME: Maybe use ld.so.cache
   (append (library-sources library)
           (when (library-system library)
             (discover-subdirectories
              (asdf:system-source-directory
               (library-system library))))
           cffi:*foreign-library-directories*
-          *system-source-directories*))
+          *system-source-directories*
+          #+windows (env-paths "PATH")
+          #+linux (env-paths "LD_LIBRARY_PATH")
+          #+darwin (env-paths "DYLD_LIBRARY_PATH")))
 
 (defmethod find-source-file ((library library))
   (let ((sources (possible-directories library)))

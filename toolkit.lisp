@@ -126,3 +126,21 @@
     (loop for (system-spec spec) in spec
           when (system-applicable-p system-spec)
           append (resolve-inner-spec spec))))
+
+(defun split (split string)
+  (let ((out (make-string-output-stream))
+        (pieces ()))
+    (flet ((add ()
+             (let ((string (get-output-stream-string out)))
+               (unless (string= string "")
+                 (push string pieces)))))
+      (loop for c across string
+            do (if (char= c split)
+                   (add)
+                   (write-char c out))
+            finally (add))
+      (nreverse pieces))))
+
+(defun env-paths (variable)
+  (mapcar #'uiop:parse-native-namestring
+          (split #+windows #\; #-windows #\: (uiop:getenv variable))))
