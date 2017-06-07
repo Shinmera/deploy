@@ -10,7 +10,6 @@
   (:use #:cl)
   ;; deploy.lisp
   (:export
-   #:*data-location*
    #:quit
    #:deploy-op)
   ;; hooks.lisp
@@ -49,6 +48,8 @@
    #:parse-info-plist)
   ;; toolkit.lisp
   (:export
+   #:*data-location*
+   #:data-directory
    #:status
    #:env-set-p
    #:redirect-output

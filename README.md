@@ -1,5 +1,5 @@
 ## About Deploy
-This is a system to help you easily and quickly deploy standalone common lisp applications as binaries. Specifically it is geared towards applications with foreign library dependencies.
+This is a system to help you easily and quickly deploy standalone common lisp applications as binaries. Specifically it is geared towards applications with foreign library dependencies that run some kind of GUI.
 
 ## How To
 In order to make use of Deploy, you'll have to change the ASDF system definition of your project to contain the following properties:
@@ -50,5 +50,13 @@ Deploy also offers a hooks system with which you can easily extend the steps per
 
 If you would simply like to include a data directory to bundle with the rest, use `define-resource-directory`. After boot, all of the resource files will be in the directory returned by `data-directory`.
 
-## Deploying to an OS X App
+## Deploying to an OS X App Bundle
 If you would like a nicely bundled `.app` for OS X, you can simply change the `build-operation` in your ASDF system file to `osx-app-deploy-op`. If you would like to customise the `Info.plist` file that is generated for the app, you can change `*info-plist-template*` to point to a file that contains what you want.
+
+## Debugging a Deployed Executable
+If you're having trouble with an application that's already deployed, there's a few things you can do to debug it by setting environment variables. The following are recognised by Deploy:
+
+* `DEPLOY_DEBUG_BOOT` if set to a non-empty value, on error the debugger is invoked rather than just exiting the application.
+* `DEPLOY_REDIRECT_OUTPUT` if set to a file path, the output of all streams is redirected to this file.
+
+Particularly on Windows and OS X debugging can be an issue, as a GUI application will not get a standard output to write to. In that case, the above redirect might help. Alternatively, on Windows, you can build your binary with the feature flag `:deploy-console` present, which will force it to deploy as a console application.

@@ -69,11 +69,13 @@
   ;; the possibility open.
   (restart-case
       (handler-bind ((error (lambda (err)
-                              (when (env-set-p "DEBUG_BOOT")
-                                (status 0 "Encountered unhandled error: ~a" err)
-                                (invoke-restart 'exit)))))
-        (when (env-set-p "REDIRECT_OUTPUT")
-          (redirect-output (uiop:getenv "REDIRECT_OUTPUT")))
+                              (cond ((env-set-p "DEPLOY_DEBUG_BOOT")
+                                     (invoke-debugger err))
+                                    (T
+                                     (status 0 "Encountered unhandled error: ~a" err)
+                                     (invoke-restart 'exit))))))
+        (when (env-set-p "DEPLOY_REDIRECT_OUTPUT")
+          (redirect-output (uiop:getenv "DEPLOY_REDIRECT_OUTPUT")))
         (warmly-boot system op)
         (status 0 "Launching application.")
         (funcall entry-point)
@@ -128,14 +130,21 @@
     (setf uiop:*image-dumped-p* :executable)
     #+(and windows ccl)
     (ccl:save-application file
-                          :prepend-kernel T :purify T
-                          :application-type :gui
-                          :toplevel-function #'uiop:restore-image)
+                          :prepend-kernel T
+                          :purify T
+                          :toplevel-function #'uiop:restore-image
+                          :application-type
+                          #+deploy-console :console
+                          #-deploy-console :gui)
     #-(and windows ccl)
-    (uiop:dump-image file
-                     :executable T
-                     #+sb-core-compression :compression #+sb-core-compression T
-                     #+(and sbcl os-windows) :application-type #+(and sbcl os-windows) :gui)))
+    (apply #'uiop:dump-image file
+           (append '(:executable T)
+                   #+sb-core-compression
+                   '(:compression T)
+                   #+(and sbcl os-windows)
+                   '(:application-type
+                     #+deploy-console :console
+                     #-deploy-console :gui)))))
 
 ;; hook ASDF
 (flet ((export! (symbol package)
