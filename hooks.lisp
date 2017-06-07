@@ -39,7 +39,6 @@
 (defmacro define-hook ((type name &optional (priority 0)) args &body body)
   (ecase type (:build) (:deploy) (:boot) (:quit))
   (check-type name symbol)
-  (check-type priority integer)
   `(let ((,name (hook ,type ',name)))
      (unless ,name
        (setf ,name
