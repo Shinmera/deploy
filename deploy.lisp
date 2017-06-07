@@ -7,7 +7,6 @@
 (in-package #:org.shirakumo.deploy)
 
 (defvar *foreign-libraries-to-reload* ())
-(defparameter *data-location* #p"")
 
 (define-hook (:deploy foreign-libraries) (directory)
   (ensure-directories-exist directory)
@@ -16,7 +15,7 @@
       (let ((target (make-pathname :defaults (library-path lib)
                                    :directory (pathname-directory directory))))
         (unless (or (uiop:file-exists-p target)
-                    (library-dont-copy-p lib))
+                    (library-dont-deploy-p lib))
           (status 1 "Copying library ~a" lib)
           (unless (library-path lib)
             (error "~a does not have a known library source path." lib))
@@ -38,7 +37,7 @@
            (let ((lib (ensure-library lib))
                  #+sbcl(sb-ext:*muffled-warnings* 'style-warning))
              (unless (or (library-open-p lib)
-                         (library-dont-load-p lib))
+                         (library-dont-open-p lib))
                (status 1 "Loading foreign library ~a." lib)
                (open-library lib)))))
     (dolist (lib *foreign-libraries-to-reload*)
@@ -46,7 +45,7 @@
 
 (defun warmly-boot (system op)
   (let* ((dir (runtime-directory))
-         (data (merge-pathnames *data-location* dir)))
+         (data (data-directory)))
     (status 0 "Performing warm boot.")
     (status 1 "Runtime directory is ~a" dir)
     (status 1 "Resource directory is ~a" data)
@@ -116,7 +115,7 @@
   (status 0 "Gathering system information.")
   (destructuring-bind (file data) (asdf:output-files o c)
     (setf *foreign-libraries-to-reload* (remove-if-not #'library-open-p
-                                                       (remove-if #'library-dont-load-p (list-libraries))))
+                                                       (remove-if #'library-dont-open-p (list-libraries))))
     (status 1 "Will load the following foreign libs on boot:~%~s" *foreign-libraries-to-reload*)
     (status 0 "Deploying files to ~a" data)
     (ensure-directories-exist file)

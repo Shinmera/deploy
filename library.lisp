@@ -31,8 +31,8 @@
   ((system :initarg :system :initform NIL :accessor library-system)
    (sources :initarg :sources :initform () :accessor library-sources)
    (path :initarg :path :initform NIL :accessor library-path)
-   (dont-load :initarg :dont-load :initform NIL :accessor library-dont-load-p)
-   (dont-copy :initarg :dont-copy :initform NIL :accessor library-dont-copy-p)))
+   (dont-open :initarg :dont-open :initform NIL :accessor library-dont-open-p)
+   (dont-deploy :initarg :dont-deploy :initform NIL :accessor library-dont-deploy-p)))
 
 (defmethod print-object ((library library) stream)
   (print-unreadable-object (library stream :type T)

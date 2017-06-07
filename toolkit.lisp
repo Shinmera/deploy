@@ -6,6 +6,11 @@
 
 (in-package #:org.shirakumo.deploy)
 
+(defparameter *data-location* #p"")
+
+(defun data-directory ()
+  (merge-pathnames *data-location* (runtime-directory)))
+
 (defun find-relative-path-to (target source)
   (let ((directory (list :relative))
         (temp (make-pathname :directory (copy-list (pathname-directory source))
