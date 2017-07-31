@@ -47,16 +47,17 @@
 
 (defmethod possible-directories ((library library))
   ;; FIXME: Maybe use ld.so.cache
-  (append (library-sources library)
-          (when (library-system library)
-            (discover-subdirectories
-             (asdf:system-source-directory
-              (library-system library))))
-          (mapcar #'eval cffi:*foreign-library-directories*)
-          *system-source-directories*
-          #+windows (env-paths "PATH")
-          #+linux (env-paths "LD_LIBRARY_PATH")
-          #+darwin (env-paths "DYLD_LIBRARY_PATH")))
+  (remove NIL
+          (append (library-sources library)
+                  (when (library-system library)
+                    (discover-subdirectories
+                     (asdf:system-source-directory
+                      (library-system library))))
+                  (mapcar #'eval cffi:*foreign-library-directories*)
+                  *system-source-directories*
+                  #+windows (env-paths "PATH")
+                  #+linux (env-paths "LD_LIBRARY_PATH")
+                  #+darwin (env-paths "DYLD_LIBRARY_PATH"))))
 
 (defmethod find-source-file ((library library))
   (let ((sources (possible-directories library)))
