@@ -82,11 +82,11 @@
              (cond ((uiop:directory-pathname-p path)
                     (let ((tpath (merge-pathnames (format NIL "~a/" (car (last (pathname-directory path))))
                                                   destination)))
-                      (ensure-directories-exist tpath)
                       (dolist (subpath (directory-contents path))
                         (r subpath tpath))))
 
                    (T
+                    (ensure-directories-exist destination)
                     (uiop:copy-file path (make-pathname :name (pathname-name path)
                                                         :type (pathname-type path)
                                                         :defaults destination))))))
