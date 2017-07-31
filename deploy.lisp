@@ -8,6 +8,11 @@
 
 (defvar *foreign-libraries-to-reload* ())
 
+(defun query-for-library-path ()
+  (format *query-io* "~&[DEPLOY] Enter the library path: ")
+  (finish-output *query-io*)
+  (list (uiop:parse-native-namestring (read-line *query-io*))))
+
 (define-hook (:deploy foreign-libraries) (directory)
   (ensure-directories-exist directory)
   (dolist (lib (list-libraries))
@@ -21,8 +26,7 @@
             (restart-case (error "~a does not have a known library source path." lib)
               (provide-path (path)
                 :report "Provide the path to the library manually."
-                :interactive (lambda () (format *query-io* "~& Enter the library path: ")
-                               (list (uiop:parse-native-namestring (read-line *query-io*))))
+                :interactive query-for-library-path
                 (setf (library-path lib) path))))
           (uiop:copy-file (library-path lib) target))))))
 
