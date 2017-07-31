@@ -13,6 +13,8 @@
         #+unix #p"/usr/lib/"
         #+unix #p"/usr/lib/*/"
         #+unix #p"/usr/lib64/"
+        #+unix #p"/usr/lib/x86_64-linux-gnu/"
+        #+unix #p"/usr/lib/x86-linux-gnu/"
         #+unix #p"/usr/local/lib/"
         #+darwin #p"/usr/local/Cellar/**/lib/"
         #+darwin #p"/opt/local/lib"))
