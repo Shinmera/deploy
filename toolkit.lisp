@@ -143,4 +143,4 @@
 
 (defun env-paths (variable)
   (mapcar #'uiop:parse-native-namestring
-          (split #+windows #\; #-windows #\: (uiop:getenv variable))))
+          (split #+windows #\; #-windows #\: (or (uiop:getenv variable) ""))))
