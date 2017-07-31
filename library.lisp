@@ -53,7 +53,9 @@
                     (discover-subdirectories
                      (asdf:system-source-directory
                       (library-system library))))
-                  (mapcar #'eval cffi:*foreign-library-directories*)
+                  (loop for form in cffi:*foreign-library-directories*
+                        for result = (eval form)
+                        append (if (listp result) result (list result)))
                   *system-source-directories*
                   #+windows (env-paths "PATH")
                   #+linux (env-paths "LD_LIBRARY_PATH")
