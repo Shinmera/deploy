@@ -17,17 +17,17 @@
   (ensure-directories-exist directory)
   (dolist (lib (list-libraries))
     (with-simple-restart (continue "Ignore and continue deploying.")
+      (unless (library-path lib)
+        (restart-case (error "~a does not have a known library source path." lib)
+          (provide-path (path)
+            :report "Provide the path to the library manually."
+            :interactive query-for-library-path
+            (setf (library-path lib) path))))
       (let ((target (make-pathname :defaults (library-path lib)
                                    :directory (pathname-directory directory))))
         (unless (or (uiop:file-exists-p target)
                     (library-dont-deploy-p lib))
           (status 1 "Copying library ~a" lib)
-          (unless (library-path lib)
-            (restart-case (error "~a does not have a known library source path." lib)
-              (provide-path (path)
-                :report "Provide the path to the library manually."
-                :interactive query-for-library-path
-                (setf (library-path lib) path))))
           (uiop:copy-file (library-path lib) target))))))
 
 (define-hook (:build foreign-libraries most-negative-fixnum) ()
