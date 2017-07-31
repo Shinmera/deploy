@@ -18,7 +18,12 @@
                     (library-dont-deploy-p lib))
           (status 1 "Copying library ~a" lib)
           (unless (library-path lib)
-            (error "~a does not have a known library source path." lib))
+            (restart-case (error "~a does not have a known library source path." lib)
+              (provide-path (path)
+                :report "Provide the path to the library manually."
+                :interactive (lambda () (format *query-io* "~& Enter the library path: ")
+                               (uiop:parse-native-namestring (read-line *query-io*)))
+                (setf (library-path lib) path))))
           (uiop:copy-file (library-path lib) target))))))
 
 (define-hook (:build foreign-libraries most-negative-fixnum) ()
