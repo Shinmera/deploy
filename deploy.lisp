@@ -22,7 +22,7 @@
               (provide-path (path)
                 :report "Provide the path to the library manually."
                 :interactive (lambda () (format *query-io* "~& Enter the library path: ")
-                               (uiop:parse-native-namestring (read-line *query-io*)))
+                               (list (uiop:parse-native-namestring (read-line *query-io*))))
                 (setf (library-path lib) path))))
           (uiop:copy-file (library-path lib) target))))))
 
