@@ -7,9 +7,13 @@
 (in-package #:org.shirakumo.deploy)
 
 (defparameter *system-source-directories*
-  (list #+windows #p"C:/Windows/system32/"
+  (list #+windows (or #+(or allegro clisp clozure cmucl gcl lispworks sbcl scl xcl)
+                      (first (uiop:raw-command-line-arguments))
+                      #+(or clasp ecl) (si:argv 0) #+mkcl (mkcl:argv 0))
+        #+windows #p"C:/Windows/system32/"
         #+(and windows x86) #p"C:/Windows/SysWoW64/"
         #+windows #p"C:/Windows/"
+        #+windows #p"C:/Windows/System32/Wbem"
         #+unix #p"/usr/lib/"
         #+unix #p"/usr/lib/*/"
         #+unix #p"/usr/lib64/"
