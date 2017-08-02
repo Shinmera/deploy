@@ -19,7 +19,7 @@
     (with-simple-restart (continue "Ignore and continue deploying.")
       (unless (library-dont-deploy-p lib)
         (unless (library-path lib)
-          (restart-case (error "~a does not have a known library source path." lib)
+          (restart-case (error "~a does not have a known shared library file path." lib)
             (provide-path (path)
               :report "Provide the path to the library manually."
               :interactive query-for-library-path
