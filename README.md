@@ -11,7 +11,7 @@ In order to make use of Deploy, you'll have to change the ASDF system definition
 
 Once you have updated your system appropriately, all you need to do is start a fresh instance of your implementation from a terminal and run the following function:
 
-    (asdf:operate :build-op :my-system)
+    (asdf:make :my-system)
 
 This will build your system, gather the necessary information, and deploy a standalone `bin` folder within your project's root directory. You can then ship this folder to your users.
 
