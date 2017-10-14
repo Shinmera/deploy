@@ -59,6 +59,5 @@
                  (status 1 "Error during ~a: ~a" type err))))))
 
 (defmacro define-resource-directory (name directory &key (copy-root T))
-  (let ((target (gensym "TARGET")))
-    `(define-hook (:deploy ,name) (,target)
-       (copy-directory-tree ,directory ,target :copy-root ,copy-root))))
+  `(define-hook (:deploy ,name) (directory)
+     (copy-directory-tree ,directory directory :copy-root ,copy-root)))
