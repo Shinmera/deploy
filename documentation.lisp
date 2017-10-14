@@ -236,6 +236,12 @@ See DEFINE-HOOK")
   (function define-resource-directory
     "Shorthand to define a hook that simply deploys the given directory.
 
+The directory has to be a form that evaluates to a
+pathname to a directory that should be copied. The
+path is merged with the system source directory of
+the system being deployed. This means that relative
+paths are relative to the source root of your system.
+
 See DEFINE-HOOK
 See COPY-DIRECTORY-TREE"))
 

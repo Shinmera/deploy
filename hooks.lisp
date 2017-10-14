@@ -59,5 +59,6 @@
                  (status 1 "Error during ~a: ~a" type err))))))
 
 (defmacro define-resource-directory (name directory &key (copy-root T))
-  `(define-hook (:deploy ,name) (directory)
-     (copy-directory-tree ,directory directory :copy-root ,copy-root)))
+  `(define-hook (:deploy ,name) (system directory)
+     (copy-directory-tree (merge-pathnames ,directory (asdf:system-source-directory system))
+                          directory :copy-root ,copy-root)))
