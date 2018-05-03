@@ -62,11 +62,13 @@
                     :direction :output
                     :if-exists :append
                     :if-does-not-exist :create)))
-    (format file "~&>> Deployment log start~%")
     (setf *standard-output* file)
     (setf *error-output* file)
     (setf *trace-output* file)
     (setf *debug-io* (make-echo-stream *debug-io* file))
+    (multiple-value-bind (ss mm hh d m y) (decode-universal-time (get-universal-time))
+      (status 0 "Deploy log started on ~d.~2,'0d.~2,'0d ~d:~2,'0d:~2,'0d"
+              y m d hh mm ss))
     file))
 
 (defun runtime-directory ()
