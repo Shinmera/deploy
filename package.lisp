@@ -52,6 +52,7 @@
   ;; toolkit.lisp
   (:export
    #:*data-location*
+   #:*status-output*
    #:data-directory
    #:status
    #:env-set-p
