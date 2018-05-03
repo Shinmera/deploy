@@ -7,6 +7,7 @@
 (in-package #:org.shirakumo.deploy)
 
 (defparameter *data-location* #p"")
+(defparameter *status-output* T)
 
 (defun data-directory ()
   (merge-pathnames *data-location* (runtime-directory)))
@@ -46,11 +47,13 @@
     (r (uiop:pathname-directory-pathname path))))
 
 (defun status (level format-string &rest format-args)
-  (format T "~& ~a ~?~%" (case level
+  (when *status-output*
+    (format *status-output*
+            "~& ~a ~?~%" (case level
                            (0 "==>")
                            (1 "  ->")
                            (T "    >"))
-          format-string format-args))
+            format-string format-args)))
 
 (defun env-set-p (envvar)
   (let ((value (uiop:getenv envvar)))
