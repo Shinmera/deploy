@@ -464,6 +464,15 @@ influence where resource files are stored.
 
 See DATA-DIRECTORY")
 
+  (variable *status-output*
+    "The output stream of status messages.
+
+You can set this to NIL if you want to suppress status
+messages on the console, or set them to some other
+stream that won't bother the user.
+
+See STATUS")
+
   (function data-directory
     "Return an absolute path to the resource directory.
 
@@ -494,10 +503,12 @@ Windows: \"dll\"")
 This includes the path itself.")
 
   (function status
-    "Print a status message to standard-output.
+    "Print a status message to *status-output*.
 
 The level determines the granularity of the message.
-Higher levels mean \"more detailed\".")
+Higher levels mean \"more detailed\".
+
+See *STATUS-OUTPUT*")
 
   (function env-set-p
     "Returns the value of the given environment variable if it is set to a non-empty value.")
