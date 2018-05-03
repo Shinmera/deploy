@@ -15,13 +15,13 @@
         #+windows #p"C:/Windows/"
         #+windows #p"C:/Windows/System32/Wbem"
         #+unix #p"/usr/lib/"
-        #+unix #p"/usr/lib/*/"
-        #+unix #p"/usr/lib64/"
-        #+unix #p"/usr/lib/x86_64-linux-gnu/"
-        #+unix #p"/usr/lib/x86-linux-gnu/"
         #+unix #p"/usr/local/lib/"
-        #+darwin #p"/usr/local/Cellar/**/lib/"
-        #+darwin #p"/opt/local/lib"))
+        #+(and unix x86-64) #p"/usr/lib64/"
+        #+(and unix x86-64) #p"/usr/lib/x86_64-linux-gnu/"
+        #+(and unix x86) #p"/usr/lib/x86-linux-gnu/"
+        #+unix #p"/usr/lib/*/"
+        #+darwin #p"/opt/local/lib"
+        #+darwin #p"/usr/local/Cellar/**/lib/"))
 
 (defun list-libraries ()
   (mapcar #'ensure-library (cffi:list-foreign-libraries)))
