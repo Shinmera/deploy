@@ -11,7 +11,9 @@
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :maintainer "Nicolas Hafner <shinmera@tymoon.eu>"
   :description "Tools to aid in the deployment of a fully standalone application."
-  :homepage "https://github.com/Shinmera/deploy"
+  :homepage "https://Shinmera.github.io/deploy/"
+  :bug-tracker "https://github.com/Shinmera/deploy/issues"
+  :source-control (:git "https://github.com/Shinmera/deploy.git")
   :serial T
   :components ((:file "package")
                (:file "toolkit")

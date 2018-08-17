@@ -12,7 +12,9 @@
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :maintainer "Nicolas Hafner <shinmera@tymoon.eu>"
   :description "Test system for deployment."
-  :homepage "https://github.com/Shinmera/deploy"
+  :homepage "https://Shinmera.github.io/deploy/"
+  :bug-tracker "https://github.com/Shinmera/deploy/issues"
+  :source-control (:git "https://github.com/Shinmera/deploy.git")
   :serial T
   :components ((:file "test"))
   :depends-on (:cl-mpg123
