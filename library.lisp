@@ -58,6 +58,7 @@
   ;; FIXME: Maybe use ld.so.cache
   (remove NIL
           (append (library-sources library)
+                  (list (cffi::foreign-library-handle library))
                   (when (library-system library)
                     (discover-subdirectories
                      (asdf:system-source-directory
