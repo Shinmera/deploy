@@ -117,8 +117,9 @@
             (call-entry-prepared entry c o)))))
 
 (defmethod asdf:output-files ((o deploy-op) (c asdf:system))
-  (let ((file (merge-pathnames (uiop:ensure-directory-pathname "bin")
-                               (first (call-next-method)))))
+  (let ((file (print (merge-pathnames (asdf/system:component-build-pathname c)
+                                      (merge-pathnames (uiop:ensure-directory-pathname "bin")
+                                                       (asdf:system-source-directory c))))))
     (values (list file
                   (uiop:pathname-directory-pathname file))
             T)))
