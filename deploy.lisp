@@ -146,17 +146,19 @@
                           :purify T
                           :toplevel-function #'uiop:restore-image
                           :application-type
-                          #+deploy-console :console
-                          #-deploy-console :gui)
+                          (if (uiop:featurep :deploy-console)
+                              :console
+                              :gui))
     #-(and windows ccl)
     (apply #'uiop:dump-image file
            (append '(:executable T)
                    #+sb-core-compression
                    '(:compression T)
                    #+(and sbcl os-windows)
-                   '(:application-type
-                     #+deploy-console :console
-                     #-deploy-console :gui)))))
+                   `(:application-type
+                     ,(if (uiop:featurep :deploy-console)
+                          :console
+                          :gui))))))
 
 ;; hook ASDF
 (flet ((export! (symbol package)
