@@ -19,6 +19,9 @@
         #+(and unix x86-64) #p"/usr/lib64/"
         #+(and unix x86-64) #p"/usr/lib/x86_64-linux-gnu/"
         #+(and unix x86) #p"/usr/lib/x86-linux-gnu/"
+        #+(and unix arm64) #p"/usr/lib/aarch64-linux-gnu/"
+        #+(and unix arm) #p"/usr/lib/arm-linux-gnueabi/"
+        #+(and unix arm) #p"/usr/lib/arm-linux-gnueabihf/"
         #+unix #p"/usr/lib/*/"
         #+darwin #p"/opt/local/lib"
         #+darwin #p"/usr/local/Cellar/**/lib/"))
