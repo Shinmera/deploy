@@ -24,8 +24,10 @@
               :report "Provide the path to the library manually."
               :interactive query-for-library-path
               (setf (library-path lib) path))))
-        (let ((target (make-pathname :defaults (library-path lib)
-                                     :directory (pathname-directory directory))))
+        (let ((target (make-pathname :directory (pathname-directory directory)
+                                     :device (pathname-device directory)
+                                     :host (pathname-host directory)
+                                     :defaults (library-path lib))))
           (unless (uiop:file-exists-p target)
             (status 1 "Copying library ~a" lib)
             (uiop:copy-file (library-path lib) target)))))))
