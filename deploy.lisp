@@ -13,9 +13,17 @@
   (finish-output *query-io*)
   (list (uiop:parse-native-namestring (read-line *query-io*))))
 
+#+sb-core-compression
+(progn
+  (cffi:define-foreign-library libz
+    (:windows "zlib1.dll")
+    (T (:default "libz")))
+  (define-library libz))
+
 (define-hook (:deploy foreign-libraries) (directory)
   (ensure-directories-exist directory)
-  (dolist (lib (list-libraries))
+  (dolist (lib #+sb-core-compression (list* (ensure-library 'libz) (list-libraries))
+               #-sb-core-compression (list-libraries))
     (with-simple-restart (continue "Ignore and continue deploying.")
       (unless (library-dont-deploy-p lib)
         (unless (library-path lib)
