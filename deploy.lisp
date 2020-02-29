@@ -150,6 +150,8 @@
     (run-hooks :build :system c :op o)
     (status 0 "Dumping image to ~a" file)
     (setf uiop:*image-dumped-p* :executable)
+    #+windows
+    (setf file (make-pathname :type "exe" :defaults file))
     #+(and windows ccl)
     (ccl:save-application file
                           :prepend-kernel T
