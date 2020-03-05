@@ -12,7 +12,8 @@
   (:export
    #:quit
    #:deploy-op
-   #:discover-entry-point)
+   #:discover-entry-point
+   #:deployed-p)
   ;; hooks.lisp
   (:export
    #:hook

@@ -8,6 +8,8 @@
 
 (defvar *foreign-libraries-to-reload* ())
 
+(defun deployed-p () NIL)
+
 (defun query-for-library-path ()
   (format *query-io* "~&[DEPLOY] Enter the library path: ")
   (finish-output *query-io*)
@@ -150,6 +152,7 @@
     (run-hooks :build :system c :op o)
     (status 0 "Dumping image to ~a" file)
     (setf uiop:*image-dumped-p* :executable)
+    (setf (fdefinition 'deployed-p) (lambda () T))
     #+windows
     (setf file (make-pathname :type "exe" :defaults file))
     #+(and windows ccl)

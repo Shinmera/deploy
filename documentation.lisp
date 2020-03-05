@@ -95,7 +95,10 @@ See LIST-LIBRARIES
 See *FOREIGN-LIBRARIES-TO-RELOAD*
 See *DATA-LOCATION*
 See FIND-RELATIVE-PATH-TO
-See RUN-HOOKS"))
+See RUN-HOOKS")
+
+  (function deployed-p
+    "Returns T if the current Lisp environment has been booted from a deployed executable."))
 
 ;; hooks.lisp
 (docs:define-docs
