@@ -37,7 +37,7 @@
                       collect hook)))
 
 (defmacro define-hook ((type name &optional (priority 0)) args &body body)
-  (ecase type (:build) (:deploy) (:boot) (:quit))
+  (ecase type (:load) (:build) (:deploy) (:boot) (:quit))
   (check-type name symbol)
   `(let ((,name (hook ,type ',name)))
      (unless ,name

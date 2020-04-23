@@ -137,6 +137,8 @@
             T)))
 
 (defmethod asdf:perform ((o deploy-op) (c asdf:system))
+  (status 0 "Running load hooks.")
+  (run-hooks :load :system c :op o)
   (status 0 "Gathering system information.")
   (destructuring-bind (file data) (asdf:output-files o c)
     (setf *foreign-libraries-to-reload* (remove-if-not #'library-open-p

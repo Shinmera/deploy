@@ -71,21 +71,23 @@ See ASDF/SYSTEM:COMPONENT-ENTRY-POINT")
 When this operation is performed, the following steps
 are taken:
 
-1. The output files are determined, which should be
+1. The :LOAD hooks are run with the appropriate
+   arguments.
+2. The output files are determined, which should be
    a list of two paths, the first being the executable
    to dump to, and the second being a directory where
    all the resources should be stored.
-2. The list of libraries to reload on boot is computed
+3. The list of libraries to reload on boot is computed
    by removing all libraries that are either marked as
    dont-open, or aren't yet opened from LIST-LIBRARIES.
-3. The deployment directories are created.
-4. The *DATA-LOCATION* path is adapted to be relative
+4. The deployment directories are created.
+5. The *DATA-LOCATION* path is adapted to be relative
    to the binary file.
-5. The :DEPLOY hooks are run with the appropriate
+6. The :DEPLOY hooks are run with the appropriate
    arguments.
-6. The :BUILD hooks are run with the appropriate
+7. The :BUILD hooks are run with the appropriate
    arguments.
-7. The image is dumped to an executable format, using
+8. The image is dumped to an executable format, using
    core compression if available, and using the
    appropriate application type depending on the
    presence of the operating system and the
@@ -137,7 +139,7 @@ See HOOK")
   (function hook-type
     "Accessor to the type of the hook.
 
-The type can be one of :BUILD :DEPLOY :BOOT :QUIT.
+The type can be one of :LOAD :BUILD :DEPLOY :BOOT :QUIT.
 
 See HOOK")
 
@@ -186,6 +188,10 @@ The following arguments are available for all hook types:
           application.
 
 The following hook types are recognised:
+- :load    These functions should perform the loading of
+           systems or other kinds of things that will
+           potentially change the set of libraries.
+
 - :deploy  These functions are responsible for copying
            files into the deployment target directory.
            It supplies the following extra arguments:
