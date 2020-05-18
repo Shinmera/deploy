@@ -75,13 +75,13 @@
     (status 0 "Running boot hooks.")
     (run-hooks :boot :directory dir :system system :op op)))
 
-(defun quit (&optional system op)
+(defun quit (&optional system op (exit-code 0))
   (status 0 "Running quit hooks.")
   (handler-bind ((error (lambda (err) (invoke-restart 'report-error err))))
     (run-hooks :quit :system system :op op))
   (uiop:finish-outputs)
-  #+sbcl (sb-ext:exit :timeout 1)
-  #-sbcl (uiop:quit 0 NIL))
+  #+sbcl (sb-ext:exit :timeout 1 :code exit-code)
+  #-sbcl (uiop:quit exit-code NIL))
 
 (defun call-entry-prepared (entry-point system op)
   ;; We don't handle anything here unless we have no other
@@ -95,7 +95,7 @@
                                      (invoke-debugger err))
                                     (T
                                      (status 0 "Encountered unhandled error: ~a" err)
-                                     (invoke-restart 'exit))))))
+                                     (invoke-restart 'exit 1))))))
         (when (env-set-p "DEPLOY_REDIRECT_OUTPUT")
           (redirect-output (uiop:getenv "DEPLOY_REDIRECT_OUTPUT")))
         (warmly-boot system op)
@@ -103,9 +103,9 @@
         (funcall entry-point)
         (status 0 "Epilogue.")
         (invoke-restart 'exit))
-    (exit ()
+    (exit (&optional (exit-code 0))
       :report "Exit."
-      (quit system op))))
+      (quit system op exit-code))))
 
 (defclass deploy-op (asdf:program-op)
   ())
