@@ -35,7 +35,7 @@
 
 (defun make-lib-pathname (name)
   (make-pathname :name (string name)
-                 :type #+linux "so"
+                 :type #+(and unix (not darwin)) "so"
                        #+darwin "dylib"
                        #+windows "dll"))
 

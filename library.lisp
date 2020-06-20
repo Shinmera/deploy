@@ -74,7 +74,7 @@
                         append (if (listp result) result (list result)))
                   *system-source-directories*
                   #+windows (env-paths "PATH")
-                  #+linux (env-paths "LD_LIBRARY_PATH")
+                  #+(and unix (not darwin)) (env-paths "LD_LIBRARY_PATH")
                   #+darwin (env-paths "DYLD_LIBRARY_PATH"))))
 
 (defmethod possible-directories (library)
