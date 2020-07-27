@@ -19,6 +19,10 @@
    :function (constantly NIL)
    :priority 0))
 
+(defmethod print-object ((hook hook) stream)
+  (print-unreadable-object (hook stream :type T)
+    (format stream "~a ~a" (hook-type hook) (hook-name hook))))
+
 (defun hook (type name)
   (loop for hook in *hooks*
         do (when (and (eql type (hook-type hook))
@@ -39,15 +43,13 @@
 (defmacro define-hook ((type name &optional (priority 0)) args &body body)
   (ecase type (:load) (:build) (:deploy) (:boot) (:quit))
   (check-type name symbol)
-  `(let ((,name (hook ,type ',name)))
-     (unless ,name
-       (setf ,name
-             (setf (hook ,type ',name)
-                   (make-instance 'hook :name ',name :type ,type))))
+  `(let ((,name (or (hook ,type ',name)
+                    (make-instance 'hook :name ',name :type ,type))))
      (setf (hook-priority ,name) ,priority)
      (setf (hook-function ,name) (flet ((,name (&key ,@args &allow-other-keys)
                                           ,@body))
                                    #',name))
+     (setf (hook ,type ',name) ,name)
      ',name))
 
 (defun run-hooks (type &rest args)
