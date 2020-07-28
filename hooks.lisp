@@ -56,9 +56,9 @@
   (loop for hook in *hooks*
         do (when (eql type (hook-type hook))
              (restart-case (apply (hook-function hook) args)
-               (report-error (err)
+               (report-error (&optional err)
                  :report "Print the error and continue running hooks."
-                 (status 1 "Error during ~a: ~a" type err))))))
+                 (status 1 "Error during ~a ~a~@[: ~a~]" type (hook-name hook) err))))))
 
 (defmacro define-resource-directory (name directory &key (copy-root T))
   `(define-hook (:deploy ,name) (system directory)
