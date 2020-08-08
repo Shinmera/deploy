@@ -149,5 +149,5 @@
       (nreverse pieces))))
 
 (defun env-paths (variable)
-  (mapcar #'uiop:parse-native-namestring
+  (mapcar (lambda (s) (uiop:parse-native-namestring (format NIL "~a/" s)))
           (split #+windows #\; #-windows #\: (or (uiop:getenv variable) ""))))
