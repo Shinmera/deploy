@@ -27,7 +27,7 @@
         #+darwin #p"/usr/local/Cellar/**/lib/"))
 
 (defun list-libraries ()
-  (mapcar #'ensure-library (cffi:list-foreign-libraries)))
+  (mapcar #'ensure-library (cffi:list-foreign-libraries :loaded-only NIL)))
 
 (defun ensure-library (library)
   (etypecase library
