@@ -40,7 +40,9 @@
                                      :defaults (library-path lib))))
           (unless (uiop:file-exists-p target)
             (status 1 "Copying library ~a" lib)
-            (uiop:copy-file (library-path lib) target)))))))
+            (uiop:copy-file (library-path lib) target))
+          ;; Force the library spec
+          (setf (slot-value lib 'cffi::spec) `((T ,(file-namestring target)))))))))
 
 (define-hook (:build foreign-libraries most-negative-fixnum) ()
   (dolist (lib (list-libraries))

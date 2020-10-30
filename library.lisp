@@ -87,10 +87,9 @@
       (when path
         (loop with filename = (pathname-filename path)
               for source in sources
-              for files = (directory (merge-pathnames filename source))
-              do (dolist (file files)
-                   (when (uiop:file-exists-p file)
-                     (return-from find-source-file file))))))))
+              for file = (merge-pathnames filename source)
+              do (when (uiop:file-exists-p file)
+                   (return-from find-source-file file)))))))
 
 (defmethod find-source-file (library)
   (find-source-file (ensure-library library)))
