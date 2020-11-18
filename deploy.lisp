@@ -38,7 +38,9 @@
                                      :device (pathname-device directory)
                                      :host (pathname-host directory)
                                      :defaults (library-path lib))))
-          (unless (uiop:file-exists-p target)
+          (when (or (not (uiop:file-exists-p target))
+                    (< (file-write-date target)
+                       (file-write-date (library-path lib))))
             (status 1 "Copying library ~a" lib)
             (uiop:copy-file (library-path lib) target))
           ;; Force the library spec
