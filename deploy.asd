@@ -1,5 +1,5 @@
 #|
- This file is a part of cl-mixed
+ This file is a part of deploy
  (c) 2017 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
  Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
@@ -7,7 +7,7 @@
 
 (asdf:defsystem deploy
   :version "1.0.0"
-  :license "Artistic"
+  :license "zlib"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :maintainer "Nicolas Hafner <shinmera@tymoon.eu>"
   :description "Tools to aid in the deployment of a fully standalone application."
