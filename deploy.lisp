@@ -72,6 +72,7 @@
 (defun warmly-boot (system op)
   (let* ((dir (runtime-directory))
          (data (data-directory)))
+    (setf *status-output* *error-output*)
     (status 0 "Performing warm boot.")
     (status 1 "Runtime directory is ~a" dir)
     (status 1 "Resource directory is ~a" data)
