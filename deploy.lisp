@@ -74,7 +74,14 @@
          (data (data-directory)))
     #+windows
     (unless (uiop:featurep :deploy-console)
-      (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :bool))
+      (when (< 0 (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :int))
+        #+sbcl
+        (flet ((adjust-stream (stream handle i/o)
+                 (when (and (/= 0 handle) (/= -1 handle))
+                   (setf (symbol-value stream) (sb-sys:make-fd-stream handle i/o T :external-format :utf-16le)))))
+          (adjust-stream 'sb-sys:*stdin* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF6 :ssize) :input)
+          (adjust-stream 'sb-sys:*stdout* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF5 :ssize) :output)
+          (adjust-stream 'sb-sys:*stderr* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF4 :ssize) :output))))
     (setf *status-output* *error-output*)
     (status 0 "Performing warm boot.")
     (status 1 "Runtime directory is ~a" dir)
