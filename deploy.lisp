@@ -72,6 +72,9 @@
 (defun warmly-boot (system op)
   (let* ((dir (runtime-directory))
          (data (data-directory)))
+    #+windows
+    (unless (uiop:featurep :deploy-console)
+      (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :bool))
     (setf *status-output* *error-output*)
     (status 0 "Performing warm boot.")
     (status 1 "Runtime directory is ~a" dir)
