@@ -10,6 +10,7 @@
   (:use #:cl)
   ;; deploy.lisp
   (:export
+   #:*compression-factor*
    #:quit
    #:deploy-op
    #:discover-entry-point

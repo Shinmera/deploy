@@ -7,6 +7,7 @@
 (in-package #:org.shirakumo.deploy)
 
 (defvar *foreign-libraries-to-reload* ())
+(defvar *compression-factor* T)
 
 (defun deployed-p () NIL)
 
@@ -195,7 +196,7 @@
     (apply #'uiop:dump-image file
            (append '(:executable T)
                    #+sb-core-compression
-                   '(:compression T)
+                   `(:compression ,*compression-factor*)
                    #+(and sbcl os-windows)
                    `(:application-type
                      ,(if (uiop:featurep :deploy-console)
