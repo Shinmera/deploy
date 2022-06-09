@@ -16,15 +16,23 @@
   (list (uiop:parse-native-namestring (read-line *query-io*))))
 
 #+sb-core-compression
-(progn
-  (cffi:define-foreign-library libz
-    (:windows "zlib1.dll")
-    (T (:default "libz")))
-  (define-library libz))
+(handler-case
+    (progn
+      (sb-ext:assert-version->= 2 2 3)
+      (cffi:define-foreign-library compression-lib
+        (:windows "libzstd.dll")
+        (T (:default "libzstd")))
+      (define-library compression-lib))
+  (error ()
+    ;; Fallback to old
+    (cffi:define-foreign-library compression-lib
+      (:windows "zlib1.dll")
+      (T (:default "libz")))
+    (define-library compression-lib)))
 
 (define-hook (:deploy foreign-libraries) (directory)
   (ensure-directories-exist directory)
-  (dolist (lib #+sb-core-compression (list* (ensure-library 'libz) (list-libraries))
+  (dolist (lib #+sb-core-compression (list* (ensure-library 'compression-lib) (list-libraries))
                #-sb-core-compression (list-libraries))
     (with-simple-restart (continue "Ignore and continue deploying.")
       (unless (library-dont-deploy-p lib)
