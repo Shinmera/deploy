@@ -19,7 +19,7 @@
 #+sb-core-compression
 (handler-case
     (progn
-      (sb-ext:assert-version->= 2 2 3)
+      (sb-ext:assert-version->= 2 2 6)
       (cffi:define-foreign-library compression-lib
         (:windows "libzstd.dll")
         (T (:default "libzstd")))
