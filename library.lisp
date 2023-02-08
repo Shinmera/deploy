@@ -16,6 +16,8 @@
         #+windows #p"C:/Windows/System32/Wbem"
         #+unix #p"/usr/lib/"
         #+unix #p"/usr/local/lib/"
+        #+(and unix x86-64) #p"/lib64/"
+        #+(and unix x86-64) #p"/lib/"
         #+(and unix x86-64) #p"/usr/lib64/"
         #+(and unix x86-64) #p"/usr/lib/x86_64-linux-gnu/"
         #+(and unix x86) #p"/usr/lib/x86-linux-gnu/"
