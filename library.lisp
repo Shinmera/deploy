@@ -96,10 +96,10 @@
              (path-to-lib (fourth (uiop:split-string group-line :separator "( )"))))
         path-to-lib)))
 
-(defun ensure-elf (path)
-  #+unix (follow-ld-script path)
-  ;; FIXME ?
-  #-unix path)
+(defun ensure-shared-library-file (path)
+  "Some linux distributions keep ld scripts in the lib directories as links, follow them if necessary"
+  #+linux (follow-ld-script path)
+  #-linux path)
 
 (defmethod possible-directories (library)
   (possible-directories (ensure-library library)))
@@ -112,7 +112,7 @@
               for source in sources
               for files = (directory (merge-pathnames filename source))
               do (when files
-                   (return-from find-source-file (first (mapcar #'ensure-elf files)))))))))
+                   (return-from find-source-file (first (mapcar #'ensure-shared-library-file files)))))))))
 
 (defmethod find-source-file (library)
   (find-source-file (ensure-library library)))
