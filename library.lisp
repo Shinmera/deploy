@@ -14,10 +14,8 @@
         #+(and windows x86) #p"C:/Windows/SysWoW64/"
         #+windows #p"C:/Windows/"
         #+windows #p"C:/Windows/System32/Wbem"
-        #+unix #p"/lib/"
         #+unix #p"/usr/lib/"
         #+unix #p"/usr/local/lib/"
-        #+(and unix x86-64) #p"/lib64/"
         #+(and unix x86-64) #p"/usr/lib64/"
         #+(and unix x86-64) #p"/usr/lib/x86_64-linux-gnu/"
         #+(and unix x86) #p"/usr/lib/x86-linux-gnu/"
@@ -80,6 +78,29 @@
                   #+(and unix (not darwin)) (env-paths "LD_LIBRARY_PATH")
                   #+darwin (env-paths "DYLD_LIBRARY_PATH"))))
 
+(defun elf-file-p (path)
+  (with-open-file (elf path :element-type '(unsigned-byte 8) :if-does-not-exist :error)
+    ;; All ELF files begin with the same four bytes
+    (and (= (read-byte elf) #x7f)
+         (= (read-byte elf) #x45)
+         (= (read-byte elf) #x4c)
+         (= (read-byte elf) #x46))))
+
+(defun follow-ld-script (path)
+  (if (elf-file-p path)
+      path
+      (let* ((file-lines (uiop:read-file-lines path))
+             (group-line (first (remove-if-not (lambda (line)
+                                                 (uiop:string-prefix-p "GROUP ( " line))
+                                               file-lines)))
+             (path-to-lib (fourth (uiop:split-string group-line :separator "( )"))))
+        path-to-lib)))
+
+(defun ensure-elf (path)
+  #+unix (follow-ld-script path)
+  ;; FIXME ?
+  #-unix path)
+
 (defmethod possible-directories (library)
   (possible-directories (ensure-library library)))
 
@@ -91,7 +112,7 @@
               for source in sources
               for files = (directory (merge-pathnames filename source))
               do (when files
-                   (return-from find-source-file (first files))))))))
+                   (return-from find-source-file (first (mapcar #'ensure-elf files)))))))))
 
 (defmethod find-source-file (library)
   (find-source-file (ensure-library library)))
