@@ -63,7 +63,8 @@
         (close-library lib))
       ;; Clear out deployment system data
       (setf (library-path lib) NIL)
-      (setf (library-sources lib) NIL)))
+      (setf (library-sources lib) NIL)
+      (setf (slot-value lib 'cffi::pathname) NIL)))
   (setf cffi:*foreign-library-directories* NIL))
 
 (define-hook (:boot foreign-libraries most-positive-fixnum) ()
