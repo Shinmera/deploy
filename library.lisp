@@ -61,10 +61,10 @@
   ;; FIXME: Maybe use ld.so.cache
   (remove NIL
           (append (library-sources library)
-                  (list
-                   (#+ccl ccl::shlib.pathname
-                    #-ccl identity
-                    (cffi::foreign-library-handle library)))
+                  #-ccl (list (cffi::foreign-library-handle library))
+                  #+ccl (let ((handle (cffi::foreign-library-handle library)))
+                          (when handle
+                            (list (ccl::shlib.pathname handle))))
                   (cffi::foreign-library-search-path library)
                   (when (library-system library)
                     (discover-subdirectories
