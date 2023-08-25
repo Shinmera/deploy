@@ -60,3 +60,10 @@ If you're having trouble with an application that's already deployed, there's a 
 * `DEPLOY_REDIRECT_OUTPUT` if set to a file path, the output of all streams is redirected to this file.
 
 Particularly on Windows and OS X debugging can be an issue, as a GUI application will not get a standard output to write to. In that case, the above redirect might help. Alternatively, on Windows, you can build your binary with the feature flag `:deploy-console` present, which will force it to deploy as a console application.
+
+## Support
+If you'd like to support the continued development of Deploy, please consider becoming a backer on Patreon:
+
+<a href="https://patreon.com/shinmera">
+  <img alt="Patreon" src="https://filebox.tymoon.eu//file/TWpjeU9RPT0=" />
+</a>
