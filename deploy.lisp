@@ -10,6 +10,12 @@
   (finish-output *query-io*)
   (list (uiop:parse-native-namestring (read-line *query-io*))))
 
+#+(and sbcl win32)
+(progn
+  (cffi:define-foreign-library libwinpthread
+    (:windows "libwinpthread-1.dll"))
+  (define-library libwinpthread))
+
 #+sb-core-compression
 (handler-case
     (progn
