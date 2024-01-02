@@ -141,11 +141,10 @@
   (let ((entry (asdf/system:component-entry-point c)))
     (unless entry
       (error "~a does not specify an entry point." c))
-    (let ((class (ignore-errors (uiop:coerce-class entry :error NIL)))
-          (func (ignore-errors (uiop:ensure-function entry))))
-      (cond (func func)
-            (class (lambda () (make-instance class)))
-            (T (error "~a's  entry point ~a is not coercable to a class or function!" c entry))))))
+    (or (ignore-errors (uiop:ensure-function entry))
+        (let ((class (ignore-errors (uiop:coerce-class entry :error NIL))))
+          (when class (lambda () (make-instance class))))
+        (error "~a's  entry point ~a is not coercable to a class or function!" c entry))))
 
 ;; Do this before to trick ASDF's subsequent usage of UIOP:ENSURE-FUNCTION on the entry-point slot.
 (defmethod asdf:perform :before ((o deploy-op) (c asdf:system))
