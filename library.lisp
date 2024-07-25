@@ -18,7 +18,8 @@
         #+(and unix arm) #p"/usr/lib/arm-linux-gnueabihf/"
         #+unix #p"/usr/lib/*/"
         #+darwin #p"/opt/local/lib"
-        #+darwin #p"/usr/local/Cellar/**/lib/"))
+        #+darwin #p"/usr/local/Cellar/**/lib/"
+        #+nx (merge-pathnames "nro/" (uiop:getenv "DATA_DIRECTORY"))))
 
 (defun list-libraries ()
   (mapcar #'ensure-library (cffi:list-foreign-libraries :loaded-only NIL)))
@@ -43,10 +44,11 @@
     (format stream "~a" (library-name library))))
 
 (defmethod possible-pathnames ((library library))
-  (append (when (cffi:foreign-library-pathname library)
-            (list (cffi:foreign-library-pathname library)))
-          (resolve-cffi-spec (slot-value library 'cffi::spec))
-          (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library))))))
+  (remove NIL
+          (append #-nx (when (cffi:foreign-library-pathname library)
+                         (list (cffi:foreign-library-pathname library)))
+                  #-nx (resolve-cffi-spec (slot-value library 'cffi::spec))
+                  (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library)))))))
 
 (defmethod possible-pathnames (library)
   (possible-pathnames (ensure-library library)))
@@ -101,12 +103,11 @@
 (defmethod find-source-file ((library library))
   (let ((sources (possible-directories library)))
     (dolist (path (possible-pathnames library))
-      (when path
-        (loop with filename = (pathname-filename path)
-              for source in sources
-              for files = (directory (merge-pathnames filename source))
-              do (when files
-                   (return-from find-source-file (first (mapcar #'ensure-shared-library-file files)))))))))
+      (loop with filename = (pathname-filename path)
+            for source in sources
+            for files = (directory (merge-pathnames filename source))
+            do (when files
+                 (return-from find-source-file (first (mapcar #'ensure-shared-library-file files))))))))
 
 (defmethod find-source-file (library)
   (find-source-file (ensure-library library)))

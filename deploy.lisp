@@ -32,6 +32,7 @@
     (define-library compression-lib)))
 
 (define-hook (:deploy foreign-libraries) (directory)
+  #+nx (setf directory (merge-pathnames "nro/" directory))
   (ensure-directories-exist directory)
   (dolist (lib #+sb-core-compression (list* (ensure-library 'compression-lib) (list-libraries))
                #-sb-core-compression (list-libraries))
@@ -155,18 +156,17 @@
             (call-entry-prepared entry c o)))))
 
 (defmethod asdf:output-files ((o deploy-op) (c asdf:system))
-  (let ((file (print (merge-pathnames (asdf/system:component-build-pathname c)
-                                      (merge-pathnames (uiop:ensure-directory-pathname "bin")
-                                                       (asdf:system-source-directory c))))))
-    (values (list file
-                  (uiop:pathname-directory-pathname file))
-            T)))
+  (values () T))
 
 (defmethod asdf:perform ((o deploy-op) (c asdf:system))
   (status 0 "Running load hooks.")
   (run-hooks :load :system c :op o)
   (status 0 "Gathering system information.")
-  (destructuring-bind (file data) (asdf:output-files o c)
+  (let* ((file #+nx (uiop:getenv "OUTPUT_CORE_PATH")
+               #-nx (merge-pathnames (asdf/system:component-build-pathname c)
+                                     (asdf:system-relative-pathname c "bin/")))
+         (data #+nx (uiop:getenv "DATA_DIRECTORY")
+               #-nx (uiop:pathname-directory-pathname file)))
     (setf *foreign-libraries-to-reload* (remove-if-not #'library-open-p
                                                        (remove-if #'library-dont-open-p (list-libraries))))
     (status 1 "Will load the following foreign libs on boot:
@@ -192,7 +192,10 @@
                           (if (uiop:featurep :deploy-console)
                               :console
                               :gui))
-    #-(and windows ccl)
+    
+    #+(and sbcl nx)
+    (sb-ext:save-lisp-and-die file :toplevel #'uiop:restore-image)
+    #-(or (and windows ccl) (and sbcl nx))
     (apply #'uiop:dump-image file
            (append '(:executable T)
                    #+sb-core-compression

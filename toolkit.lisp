@@ -31,7 +31,10 @@
   (make-pathname :name (string name)
                  :type #+(and unix (not darwin)) "so"
                        #+darwin "dylib"
-                       #+windows "dll"))
+                       #+windows "dll"
+                       #+nx "nro"
+                       #-(or unix darwin windows nx)
+                       (error "Unknown target platform. No idea what its shared library pathname is!")))
 
 (defun pathname-filename (path)
   (format NIL "~a~@[.~a~]"
@@ -71,9 +74,12 @@
     file))
 
 (defun runtime-directory ()
-  (if (uiop:argv0)
-      (uiop:truenamize (uiop:pathname-directory-pathname (uiop:argv0)))
-      (uiop:truenamize #p"")))
+  (cond ((and (uiop:featurep :nx) (deployed-p))
+         #p"rom:/")
+        ((uiop:argv0)
+         (uiop:truenamize (uiop:pathname-directory-pathname (uiop:argv0))))
+        (T
+         (uiop:truenamize #p""))))
 
 (defun directory-contents (path)
   (uiop:directory* (merge-pathnames uiop:*wild-file* path)))
