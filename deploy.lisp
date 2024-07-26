@@ -39,11 +39,15 @@
     (with-simple-restart (continue "Ignore and continue deploying.")
       (unless (library-dont-deploy-p lib)
         (unless (library-path lib)
+          #-nx
           (restart-case (error "~a does not have a known shared library file path." lib)
             (provide-path (path)
               :report "Provide the path to the library manually."
               :interactive query-for-library-path
-              (setf (library-path lib) path))))
+              (setf (library-path lib) path)))
+          #+nx
+          (progn (warn "~a does not have a known shared library file path." lib)
+                 (continue)))
         (let ((target (make-pathname :directory (pathname-directory directory)
                                      :device (pathname-device directory)
                                      :host (pathname-host directory)
