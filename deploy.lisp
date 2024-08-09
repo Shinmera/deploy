@@ -157,6 +157,7 @@
                                      (invoke-debugger err))
                                     (T
                                      (status 0 "Encountered unhandled error: ~a" err)
+                                     #+nx (uiop:print-backtrace)
                                      (invoke-restart 'exit 1))))))
         (when (env-set-p "DEPLOY_REDIRECT_OUTPUT")
           (redirect-output (uiop:getenv "DEPLOY_REDIRECT_OUTPUT")))
