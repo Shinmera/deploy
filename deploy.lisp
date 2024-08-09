@@ -87,6 +87,8 @@
 (defun warmly-boot (system op)
   (let* ((dir (runtime-directory))
          (data (data-directory)))
+    #+(and sbcl nx)
+    (setf sb-ext:*evaluator-mode* :interpret)
     #+windows
     (unless (uiop:featurep :deploy-console)
       (when (< 0 (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :int))
