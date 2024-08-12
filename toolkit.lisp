@@ -84,7 +84,7 @@
 (defun directory-contents (path)
   (uiop:directory* (merge-pathnames uiop:*wild-file* path)))
 
-(defun copy-directory-tree (source target &key (copy-root T) (exclude (constantly NIL)))
+(defun copy-directory-tree (source target &key (copy-root T) (exclude (constantly NIL)) (if-exists :supersede))
   (labels ((r (path destination)
              (cond ((uiop:directory-pathname-p path)
                     (let ((tpath (merge-pathnames (format NIL "~a/" (car (last (pathname-directory path))))
@@ -93,9 +93,20 @@
                         (r subpath tpath))))
                    ((not (funcall exclude path destination))
                     (ensure-directories-exist destination)
-                    (uiop:copy-file path (make-pathname :name (pathname-name path)
-                                                        :type (pathname-type path)
-                                                        :defaults destination))))))
+                    (let ((destination (make-pathname :name (pathname-name path)
+                                                      :type (pathname-type path)
+                                                      :defaults destination)))
+                      (if (probe-file destination)
+                          (ecase if-exists
+                            (:update
+                             (when (< (file-write-date destination) (file-write-date path))
+                               (uiop:copy-file path destination)))
+                            ((:replace :supersede :overwrite) 
+                             (uiop:copy-file path destination))
+                            ((NIL :ignore))
+                            (:error
+                             (error "The file~%  ~a~%already exists." destination)))
+                          (uiop:copy-file path destination)))))))
     (if copy-root
         (r source target)
         (dolist (subpath (directory-contents source))

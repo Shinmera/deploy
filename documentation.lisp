@@ -537,7 +537,23 @@ See UIOP:ARGV0")
     "Copy the source directory to the target directory.
 
 If COPY-ROOT is true, the source folder itself is
-copied, otherwise only its contents are copied.")
+copied, otherwise only its contents are copied.
+
+EXCLUDE may be a function of one argument, a source path, which
+returns a boolean designating whether the source file should be
+excluded or not.
+
+IF-EXISTS may be one of the following values, governing what to do if
+the destination file exists already:
+  :REPLACE :SUPERSEDE :OVERWRITE
+      --- Replaces the file regardless
+  NIL :IGNORE
+      --- Does nothing
+  :ERROR
+      --- Signals an error
+  :UPDATE
+      --- Replaces the file if its write date is older than the source
+          file's")
 
   (function xml-escape
     "Escape the string for XML.
