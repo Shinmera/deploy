@@ -16,6 +16,34 @@
     (:windows "libwinpthread-1.dll"))
   (define-library libwinpthread))
 
+#+(and sbcl nx)
+(defun interpret-compile (name &optional (definition (or (and (symbolp name) (macro-function name))
+                                                         (fdefinition name))))
+  (flet ((interpret ()
+           (let* ((interpreted (eval definition))
+                  (lambda (lambda (&rest args) (apply interpreted args))))
+             (when name (setf (fdefinition name) lambda))
+             ;; we do this indirection to satisfy COMPILED-FUNCTION-P.
+             (values lambda NIL NIL))))
+    (etypecase definition
+      (sb-kernel:interpreted-function
+       (cond (name
+              (error "Can't compile an interpreted function with name ~a on NX." name)
+              (values name NIL NIL))
+             (T
+              (interpret))))
+      (function
+       (setf (fdefinition name) definition)
+       (values definition NIL NIL))
+      (cons
+       (interpret)))))
+
+#+(and sbcl nx)
+(define-hook (:boot stub-compiler) ()
+  (sb-ext:with-unlocked-packages ("CL")
+    (setf (fdefinition 'cl:compile) #'interpret-compile)
+    (setf (fdefinition 'cl:compile-file) (lambda (&rest args) (error "Can't COMPILE-FILE on the NX.")))))
+
 #+sb-core-compression
 (handler-case
     (progn
