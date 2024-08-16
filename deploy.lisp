@@ -112,6 +112,13 @@
     (dolist (lib *foreign-libraries-to-reload*)
       (maybe-load lib))))
 
+(define-hook (:build clear-asdf most-negative-fixnum) ()
+  (asdf:clear-configuration)
+  (setf (fdefinition 'asdf:upgrade-asdf) (lambda ()))
+  (dolist (system (asdf:already-loaded-systems))
+    (asdf:register-immutable-system system)
+    (asdf:clear-system system)))
+
 (defun warmly-boot (system op)
   (let* ((dir (runtime-directory))
          (data (data-directory)))
