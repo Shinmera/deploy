@@ -1,5 +1,5 @@
 (asdf:defsystem deploy
-  :version "1.0.0"
+  :version "2.0.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :maintainer "Yukari Hafner <shinmera@tymoon.eu>"
@@ -12,9 +12,11 @@
                (:file "toolkit")
                (:file "library")
                (:file "hooks")
+               (:file "checksum")
                (:file "deploy")
                (:file "osx")
                (:file "documentation"))
   :depends-on (:cffi
+               :sha3
                :documentation-utils
                :trivial-features))

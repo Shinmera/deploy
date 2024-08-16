@@ -2,6 +2,10 @@
 (defpackage #:deploy
   (:nicknames #:org.shirakumo.deploy)
   (:use #:cl)
+  ;; checksum.lisp
+  (:export
+   #:*source-checksum*
+   #:source-checksum)
   ;; deploy.lisp
   (:export
    #:*compression-factor*

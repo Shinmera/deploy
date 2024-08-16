@@ -88,7 +88,7 @@
           ;; Force the library spec
           (setf (slot-value lib 'cffi::spec) `((T ,(file-namestring target)))))))))
 
-(define-hook (:build foreign-libraries most-negative-fixnum) ()
+(define-hook (:build foreign-libraries (+ most-negative-fixnum 10)) ()
   (dolist (lib (list-libraries))
     (let (#+sbcl(sb-ext:*muffled-warnings* 'style-warning))
       (when (library-open-p lib)
@@ -100,7 +100,7 @@
       (setf (slot-value lib 'cffi::pathname) NIL)))
   (setf cffi:*foreign-library-directories* NIL))
 
-(define-hook (:boot foreign-libraries most-positive-fixnum) ()
+(define-hook (:boot foreign-libraries (- most-positive-fixnum 10)) ()
   (status 0 "Reloading foreign libraries.")
   (flet ((maybe-load (lib)
            (let ((lib (ensure-library lib))
@@ -138,6 +138,14 @@
         (setf *status-output* NIL)
         (setf *status-output* *error-output*))
     (status 0 "Performing warm boot.")
+    (when *build-time*
+      (multiple-value-bind (s m h dd mm yy) (decode-universal-time *build-time* 0)
+        (status 1 "Build time was: ~4,'0d-~2,'0d-~2,'0d ~2,'0d:~2,'0d:~2,'0d UTC" yy mm dd h m s)))
+    (when *source-checksum*
+      (status 1 "Source checksum: ~a"
+              (with-output-to-string (out)
+                (loop for o across *source-checksum*
+                      do (format out "~2,'0X" o)))))
     (status 1 "Runtime directory is ~a" dir)
     (status 1 "Resource directory is ~a" data)
     (setf cffi:*foreign-library-directories* (list data dir))
