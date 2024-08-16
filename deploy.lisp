@@ -39,7 +39,8 @@
        (interpret)))))
 
 #+(and sbcl nx)
-(define-hook (:boot stub-compiler) ()
+(define-hook (:boot stub-compiler most-positive-fixnum) ()
+  (status 1 "Forcing COMPILE to be interpreted.")
   (sb-ext:with-unlocked-packages ("CL")
     (setf (fdefinition 'cl:compile) #'interpret-compile)
     (setf (fdefinition 'cl:compile-file) (lambda (&rest args) (error "Can't COMPILE-FILE on the NX.")))))
