@@ -75,7 +75,7 @@
 
 (defun runtime-directory ()
   (cond ((and (uiop:featurep :nx) (deployed-p))
-         #p"rom:/")
+         (make-pathname :device "rom" :directory '(:absolute)))
         ((uiop:argv0)
          (uiop:truenamize (uiop:pathname-directory-pathname (uiop:argv0))))
         (T
