@@ -39,11 +39,23 @@
        (interpret)))))
 
 #+(and sbcl nx)
-(define-hook (:boot stub-compiler most-positive-fixnum) ()
-  (status 1 "Forcing COMPILE to be interpreted.")
+(define-hook (:boot stub-nx most-positive-fixnum) ()
+  (status 1 "Stubbing out functions for the NX environment")
   (sb-ext:with-unlocked-packages ("CL")
     (setf (fdefinition 'cl:compile) #'interpret-compile)
-    (setf (fdefinition 'cl:compile-file) (lambda (&rest args) (error "Can't COMPILE-FILE on the NX.")))))
+    (setf (fdefinition 'cl:compile-file) (lambda (&rest args) (error "Can't COMPILE-FILE on the NX.")))
+    (defun cl:user-homedir-pathname (&optional host)
+      (declare (ignore host))
+      (values
+       (make-pathname :host sb-impl::*physical-host*
+                      :device "save"
+                      :directory '(:absolute)
+                      :name NIL :type NIL :version :newest)))
+    (setf sb-ext:*evaluator-mode* :interpret
+          sb-impl::*physical-host* (sb-impl::make-win32-host)
+          cl:*default-pathname-defaults* (sb-impl::intern-pathname
+                                          sb-impl::*physical-host*
+                                          "rom" '(:absolute) NIL NIL :newest))))
 
 #+sb-core-compression
 (handler-case
@@ -123,8 +135,6 @@
 (defun warmly-boot (system op)
   (let* ((dir (runtime-directory))
          (data (data-directory)))
-    #+(and sbcl nx)
-    (setf sb-ext:*evaluator-mode* :interpret)
     #+windows
     (unless (uiop:featurep :deploy-console)
       (when (< 0 (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :int))
