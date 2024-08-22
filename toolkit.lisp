@@ -4,7 +4,8 @@
 (defparameter *status-output* T)
 
 (defun data-directory ()
-  (merge-pathnames *data-location* (runtime-directory)))
+  (let ((run (runtime-directory)))
+    (make-pathname :host (pathname-host run) :defaults (merge-pathnames *data-location* run))))
 
 (defun find-relative-path-to (target source)
   (let ((directory (list :relative))

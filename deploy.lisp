@@ -133,30 +133,30 @@
     (asdf:clear-system system)))
 
 (defun warmly-boot (system op)
+  #+windows
+  (unless (uiop:featurep :deploy-console)
+    (when (< 0 (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :int))
+      #+sbcl
+      (flet ((adjust-stream (stream handle i/o)
+               (when (and (/= 0 handle) (/= -1 handle))
+                 (setf (symbol-value stream) (sb-sys:make-fd-stream handle i/o T :external-format :utf-16le)))))
+        (adjust-stream 'sb-sys:*stdin* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF6 :ssize) :input)
+        (adjust-stream 'sb-sys:*stdout* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF5 :ssize) :output)
+        (adjust-stream 'sb-sys:*stderr* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF4 :ssize) :output))))
+  (if (uiop:featurep :deploy-console)
+      (setf *status-output* NIL)
+      (setf *status-output* *error-output*))
+  (status 0 "Performing warm boot.")
+  (when *build-time*
+    (multiple-value-bind (s m h dd mm yy) (decode-universal-time *build-time* 0)
+      (status 1 "Build time was: ~4,'0d-~2,'0d-~2,'0d ~2,'0d:~2,'0d:~2,'0d UTC" yy mm dd h m s)))
+  (when *source-checksum*
+    (status 1 "Source checksum: ~a"
+            (with-output-to-string (out)
+              (loop for o across *source-checksum*
+                    do (format out "~2,'0X" o)))))
   (let* ((dir (runtime-directory))
          (data (data-directory)))
-    #+windows
-    (unless (uiop:featurep :deploy-console)
-      (when (< 0 (cffi:foreign-funcall "AttachConsole" :uint32 #xFFFFFFFF :int))
-        #+sbcl
-        (flet ((adjust-stream (stream handle i/o)
-                 (when (and (/= 0 handle) (/= -1 handle))
-                   (setf (symbol-value stream) (sb-sys:make-fd-stream handle i/o T :external-format :utf-16le)))))
-          (adjust-stream 'sb-sys:*stdin* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF6 :ssize) :input)
-          (adjust-stream 'sb-sys:*stdout* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF5 :ssize) :output)
-          (adjust-stream 'sb-sys:*stderr* (cffi:foreign-funcall "GetStdHandle" :uint32 #xFFFFFFF4 :ssize) :output))))
-    (if (uiop:featurep :deploy-console)
-        (setf *status-output* NIL)
-        (setf *status-output* *error-output*))
-    (status 0 "Performing warm boot.")
-    (when *build-time*
-      (multiple-value-bind (s m h dd mm yy) (decode-universal-time *build-time* 0)
-        (status 1 "Build time was: ~4,'0d-~2,'0d-~2,'0d ~2,'0d:~2,'0d:~2,'0d UTC" yy mm dd h m s)))
-    (when *source-checksum*
-      (status 1 "Source checksum: ~a"
-              (with-output-to-string (out)
-                (loop for o across *source-checksum*
-                      do (format out "~2,'0X" o)))))
     (status 1 "Runtime directory is ~a" dir)
     (status 1 "Resource directory is ~a" data)
     (setf cffi:*foreign-library-directories* (list data dir))
@@ -235,7 +235,9 @@
     (status 0 "Deploying files to ~a" data)
     (ensure-directories-exist file)
     (ensure-directories-exist data)
-    (setf *data-location* (find-relative-path-to data (uiop:pathname-directory-pathname file)))
+    #-nx
+    (setf *data-location* (make-pathname :host NIL :device NIL :defaults
+                                         (find-relative-path-to data (uiop:pathname-directory-pathname file))))
     (run-hooks :deploy :directory data :system c :op o)
     (status 0 "Running build hooks.")
     (run-hooks :build :system c :op o)
