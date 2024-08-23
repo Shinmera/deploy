@@ -168,8 +168,9 @@
   (handler-bind ((error (lambda (err) (invoke-restart 'report-error err))))
     (run-hooks :quit :system system :op op))
   (uiop:finish-outputs)
-  #+sbcl (sb-ext:exit :timeout 1 :code exit-code)
-  #-sbcl (uiop:quit exit-code NIL))
+  #+(and sbcl (not nx)) (sb-ext:exit :timeout 1 :code exit-code)
+  #-(or sbcl nx) (uiop:quit exit-code NIL)
+  #+nx (cffi:foreign-funcall "nx_exit" :int exit-code))
 
 (defun call-entry-prepared (entry-point system op)
   ;; We don't handle anything here unless we have no other
