@@ -41,9 +41,10 @@
 #+(and sbcl nx)
 (define-hook (:boot stub-nx most-positive-fixnum) ()
   (status 1 "Stubbing out functions for the NX environment")
-  (sb-ext:with-unlocked-packages ("CL")
+  (sb-ext:with-unlocked-packages ("CL" "SB-C")
     (setf (fdefinition 'cl:compile) #'interpret-compile)
     (setf (fdefinition 'cl:compile-file) (lambda (&rest args) (error "Can't COMPILE-FILE on the NX.")))
+    (setf (fdefinition 'sb-c::%instance-typep) (lambda (instance type) (typep instance type)))
     (defun cl:user-homedir-pathname (&optional host)
       (declare (ignore host))
       (values
