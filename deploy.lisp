@@ -73,6 +73,7 @@
       (T (:default "libz")))
     (define-library compression-lib)))
 
+#+cffi
 (define-hook (:deploy foreign-libraries) (directory)
   #+nx (setf directory (merge-pathnames "nro/" directory))
   (ensure-directories-exist directory)
@@ -111,8 +112,8 @@
       ;; Clear out deployment system data
       (setf (library-path lib) NIL)
       (setf (library-sources lib) NIL)
-      (setf (slot-value lib 'cffi::pathname) NIL)))
-  (setf cffi:*foreign-library-directories* NIL))
+      #+cffi (setf (slot-value lib 'cffi::pathname) NIL)))
+  #+cffi (setf cffi:*foreign-library-directories* NIL))
 
 (define-hook (:boot foreign-libraries (- most-positive-fixnum 10)) ()
   (status 0 "Reloading foreign libraries.")
@@ -160,7 +161,7 @@
          (data (data-directory)))
     (status 1 "Runtime directory is ~a" dir)
     (status 1 "Resource directory is ~a" data)
-    (setf cffi:*foreign-library-directories* (list data dir))
+    #+cffi (setf cffi:*foreign-library-directories* (list data dir))
     (status 0 "Running boot hooks.")
     (run-hooks :boot :directory dir :system system :op op)))
 

@@ -16,7 +16,7 @@
                (:file "deploy")
                (:file "osx")
                (:file "documentation"))
-  :depends-on (:cffi
+  :depends-on ((:feature (:not :mezzano) :cffi)
                :sha3
                :documentation-utils
                :trivial-features))

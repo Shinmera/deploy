@@ -22,17 +22,17 @@
         #+nx (merge-pathnames "nro/" (uiop:getenv "DATA_DIRECTORY"))))
 
 (defun list-libraries ()
-  (mapcar #'ensure-library (cffi:list-foreign-libraries :loaded-only NIL)))
+  (mapcar #'ensure-library
+          #+cffi (cffi:list-foreign-libraries :loaded-only NIL)
+          #-cffi ()))
 
 (defun ensure-library (library)
   (etypecase library
     (library library)
-    (cffi:foreign-library
-     (change-class library 'library))
-    (symbol
-     (ensure-library (cffi::get-foreign-library library)))))
+    #+cffi (cffi:foreign-library (change-class library 'library))
+    (symbol #+cffi (ensure-library (cffi::get-foreign-library library)))))
 
-(defclass library (cffi:foreign-library)
+(defclass library (#+cffi cffi:foreign-library)
   ((system :initarg :system :initform NIL :accessor library-system)
    (sources :initarg :sources :initform () :accessor library-sources)
    (path :initarg :path :initform NIL :accessor library-path)
@@ -44,11 +44,12 @@
     (format stream "~a" (library-name library))))
 
 (defmethod possible-pathnames ((library library))
-  (remove NIL
-          (append #-nx (when (cffi:foreign-library-pathname library)
-                         (list (cffi:foreign-library-pathname library)))
-                  #-nx (resolve-cffi-spec (slot-value library 'cffi::spec))
-                  (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library)))))))
+  (let ((paths (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library))))))
+    #+cffi
+    (when (cffi:foreign-library-pathname library)
+      (push (cffi:foreign-library-pathname library) paths))
+    (append #+cffi (resolve-cffi-spec (slot-value library 'cffi::spec))
+            (nreverse paths))))
 
 (defmethod possible-pathnames (library)
   (possible-pathnames (ensure-library library)))
@@ -57,15 +58,16 @@
   ;; FIXME: Maybe use ld.so.cache
   (remove NIL
           (append (library-sources library)
-                  #-ccl (list (cffi::foreign-library-handle library))
+                  #-ccl (list #+cffi (cffi::foreign-library-handle library))
                   #+ccl (let ((handle (cffi::foreign-library-handle library)))
                           (when handle
                             (list (ccl::shlib.pathname handle))))
-                  (cffi::foreign-library-search-path library)
+                  #+cffi (cffi::foreign-library-search-path library)
                   (when (library-system library)
                     (discover-subdirectories
                      (asdf:system-source-directory
                       (library-system library))))
+                  #+cffi
                   (loop for form in cffi:*foreign-library-directories*
                         for result = (eval form)
                         append (if (listp result) result (list result)))
@@ -117,31 +119,33 @@
     (setf (library-path library) (find-source-file library))))
 
 (defmethod library-name ((library library))
-  (cffi:foreign-library-name library))
+  #+cffi (cffi:foreign-library-name library))
 
 (defmethod library-name (library)
   (library-name (ensure-library library)))
 
 (defmethod open-library ((library library))
-  (cffi:load-foreign-library (library-name library)))
+  #+cffi (cffi:load-foreign-library (library-name library)))
 
 (defmethod open-library (library)
   (open-library (ensure-library library)))
 
 (defmethod close-library ((library library))
-  (cffi:close-foreign-library
-   (library-name library)))
+  #+cffi (cffi:close-foreign-library (library-name library)))
 
 (defmethod close-library (library)
   (close-library (ensure-library library)))
 
 (defmethod library-open-p ((library library))
-  (cffi:foreign-library-loaded-p library))
+  #+cffi (cffi:foreign-library-loaded-p library))
 
 (defmethod library-open-p (library)
   (library-open-p (ensure-library library)))
 
 (defmacro define-library (name &body initargs)
+  #+cffi
   `(change-class (cffi::get-foreign-library ',name)
                  'library
-                 ,@initargs))
+                 ,@initargs)
+  #-cffi
+  (make-instance 'library ,@initargs))
