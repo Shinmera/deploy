@@ -202,6 +202,10 @@
 (defclass deploy-op (asdf:program-op)
   ())
 
+;; KLUDGE: Apparently MAKE-PLAN is NOT called on DEPLOY-OP first. Fun.
+(defmethod asdf/plan:make-plan :before (plan (o asdf/operate:build-op) (c asdf:system) &key)
+  (run-hooks :pre-load :system c :op o))
+
 (defmethod discover-entry-point ((op deploy-op) (c asdf:system))
   (let ((entry (asdf/system:component-entry-point c)))
     (unless entry
