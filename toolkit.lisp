@@ -7,6 +7,12 @@
   (let ((run (runtime-directory)))
     (make-pathname :host (pathname-host run) :defaults (merge-pathnames *data-location* run))))
 
+(defun parent-directory (path)
+  (make-pathname :name NIL :type NIL
+                 :device (pathname-device path)
+                 :host (pathname-host path)
+                 :directory (butlast (pathname-directory path))))
+
 (defun find-relative-path-to (target source)
   (let ((directory (list :relative))
         (temp (make-pathname :directory (copy-list (pathname-directory source))
@@ -173,3 +179,13 @@
 (defun env-paths (variable)
   (mapcar (lambda (s) (uiop:parse-native-namestring (format NIL "~a/" s)))
           (split #+windows #\; #-windows #\: (or (uiop:getenv variable) ""))))
+
+(defun parse-vars (file)
+  (with-open-file (stream file)
+    (remove NIL
+            (loop for line = (read-line stream NIL NIL)
+                  while line
+                  collect (let ((pos (position #\= line)))
+                            (when pos
+                              (cons (subseq line 0 pos)
+                                    (split #\ (subseq line (1+ pos))))))))))
