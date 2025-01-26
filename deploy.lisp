@@ -281,7 +281,12 @@
   (dump (asdf:output-file o c) :type :image))
 
 (defun dump (file &key (type :executable))
-  #+(and windows ccl)
+  (setf uiop/image:*image-dumped-p* T)
+  (setf uiop/image::*image-restored-p* :in-regress)
+  (uiop/image:call-image-dump-hook)
+  (setf uiop/image::*image-restored-p* NIL)
+  ;; Have to do this crap ourselves since UIOP sucks
+  #+ccl
   (ccl:save-application file
                         :prepend-kernel (not (eql type :image))
                         :purify T
@@ -291,18 +296,21 @@
                           (:console :console)
                           (:executable :gui)
                           (:image NIL)))
-  
-  #+(and sbcl nx)
-  (sb-ext:save-lisp-and-die file :toplevel #'uiop:restore-image)
-  #-(or (and windows ccl) (and sbcl nx))
-  (apply #'uiop:dump-image file
-         #+sb-core-compression :compression
-         #+sb-core-compression *compression-factor*
+  #+sbcl
+  (apply #'sb-ext:save-lisp-and-die file
+         :toplevel #'uiop:restore-image
          (ecase type
-           (:executable
-            `(:executable T #+(and sbcl windows) ,@(list :application-type :gui)))
-           (:console
-            `(:executable T #+(and sbcl windows) ,@(list :application-type :console)))
+           ((:executable :console)
+            `(:executable T
+                          #+(and sbcl windows) ,@(list :application-type ,(if (eql type :executable) :gui :console))
+                          #+(and sb-core-compression (not nx)) ,@(list :compression *compression-factor*)))
+           (:image
+            `(:executable NIL))))
+  #-(or ccl sbcl)
+  (apply #'uiop:dump-image file
+         (ecase type
+           ((:executable :console)
+            `(:executable T))
            (:image
             `(:executable NIL)))))
 
