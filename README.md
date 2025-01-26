@@ -15,6 +15,16 @@ Once you have updated your system appropriately, all you need to do is start a f
 
 This will build your system, gather the necessary information, and deploy a standalone `bin` folder within your project's root directory. You can then ship this folder to your users.
 
+If you want to deploy a console application rather than a GUI application, you should use ``deploy-console-op`` instead, which will activate the proper mode on Windows, and suppress the standard startup output.
+
+You can also leverage deploy to "just" dump an image of your implementation state rather than a standalone executable. In that case, you should use the ``deploy-image-op``.
+
+With SBCL you can even leverage Deploy to create "shrinkwrapped" executables. These executables can statically or dynamically link C libraries and let Lisp stack frames integrate properly with foreign debuggers and profiling tools like perf. To produce a shrinkwrapped executable you must have the SBCL source tree available with which you already built your SBCL. Then you can create your executable by loading deploy and running
+
+    (deploy:shrinkwrap "my-system")
+
+It'll automatically invoke itself again to run ``deploy-image-op`` on your system, shrinkwrap that, and then compile it together with the rest of the dynamic libraries it depends on into the final executable.
+
 ## Customising Foreign Libraries
 Sometimes you might want to designate a specific library for deployment, rather than the one used during development. If this is the case, you have to help Deploy out a little by defining extra information about the library with `define-library`. If the foreign library is in the source tree of a lisp library, you can simply associate the CFFI library with the system that provides it, and Deploy will find it automatically:
 
@@ -59,7 +69,7 @@ If you're having trouble with an application that's already deployed, there's a 
 * `DEPLOY_DEBUG_BOOT` if set to a non-empty value, on error the debugger is invoked rather than just exiting the application.
 * `DEPLOY_REDIRECT_OUTPUT` if set to a file path, the output of all streams is redirected to this file.
 
-Particularly on Windows and OS X debugging can be an issue, as a GUI application will not get a standard output to write to. In that case, the above redirect might help. Alternatively, on Windows, you can build your binary with the feature flag `:deploy-console` present, which will force it to deploy as a console application.
+Particularly on Windows and OS X debugging can be an issue, as a GUI application will not get a standard output to write to. In that case, the above redirect might help.
 
 ## Support
 If you'd like to support the continued development of Deploy, please consider becoming a backer on Patreon:
