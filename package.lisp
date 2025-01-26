@@ -11,6 +11,8 @@
    #:*compression-factor*
    #:quit
    #:deploy-op
+   #:deploy-image-op
+   #:deploy-console-op
    #:discover-entry-point
    #:deployed-p)
   ;; hooks.lisp
