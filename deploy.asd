@@ -15,6 +15,7 @@
                (:file "checksum")
                (:file "deploy")
                (:file "osx")
+               (:file "shrinkwrap" :if-feature :sbcl)
                (:file "documentation"))
   :depends-on ((:feature (:not :mezzano) :cffi)
                :sha3
