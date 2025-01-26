@@ -51,6 +51,12 @@
    #:*info-plist-template*
    #:osx-app-deploy-op
    #:parse-info-plist)
+  ;; shrinkwrap.lisp
+  #+sbcl
+  (:export
+   #:*sbcl-source-tree*
+   #:shrinkwrap
+   #:shrinkwrap-op)
   ;; toolkit.lisp
   (:export
    #:*data-location*
