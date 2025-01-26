@@ -37,6 +37,7 @@
   (destructuring-bind (run-sbcl) (asdf:input-files o c)
     (with-standard-io-syntax
       (run run-sbcl
+           "--lose-on-corruption" "--disable-ldb" "--disable-debugger"
            "--eval" "(asdf:load-system :deploy :verbose NIL)"
            "--eval" "(sb-ext:without-package-locks
                        (setf deploy:*compression-factor* NIL)
@@ -67,19 +68,17 @@
   (delete-duplicates
    (append (cvar "LIBS" cvars)
            (loop for lib in (list-libraries)
-                 unless (library-dont-deploy-p lib)
                  collect (format NIL "-L~a" (make-pathname :name NIL :type NIL :defaults (library-path lib)))
-                 unless (library-dont-deploy-p lib)
                  collect (format NIL "-l:~a" (pathname-filename (library-path lib)))))
    :test #'string=))
 
 (defun sbcl-objs ()
-  (let* ((objs (list* (sbcl-path "tlsf-bsd/tlsf/tlsf.o")
-                      (directory (make-pathname :name :wild :type "o" :defaults (sbcl-path "src/runtime/"))))))
-    (loop for file in objs
-          for source = (make-pathname :type "c" :defaults file)
-          when (probe-file source)
-          collect file)))
+  (let* ((objs (uiop:run-program (list "make" "-C" (uiop:native-namestring (sbcl-path "src/runtime/"))
+                                       "--no-print-directory"
+                                       "--eval=print-objs: ; @echo $(OBJS)" "print-objs")
+                                 :output :string)))
+    (loop for name in (split #\Space (string-trim '(#\Linefeed #\Return) objs))
+          collect (merge-pathnames name (sbcl-path "src/runtime/")))))
 
 (defmethod asdf:perform ((o shrinkwrap-op) (c asdf:system))
   (destructuring-bind (core elftool run-sbcl cvars) (asdf:input-files o c)
@@ -92,7 +91,7 @@
            "-Wl,--unresolved-symbols=ignore-in-object-files"
            "-Wl,-rpath,$ORIGIN"
            (cvar "CFLAGS" cvars)
-           "-o" bin (sbcl-objs) symbol object
+           "-o" bin symbol object (sbcl-objs)
            (link-libraries o cvars))
       (patch-dependencies bin T))))
 
