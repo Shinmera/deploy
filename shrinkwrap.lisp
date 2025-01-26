@@ -1,7 +1,8 @@
 (in-package #:org.shirakumo.deploy)
 
 (defvar *sbcl-source-tree*
-  (parent-directory (parent-directory (second (first (logical-pathname-translations "SYS"))))))
+  (ignore-errors
+   (parent-directory (parent-directory (second (first (logical-pathname-translations "SYS")))))))
 
 (defun sbcl-path (path)
   (merge-pathnames path *sbcl-source-tree*))
