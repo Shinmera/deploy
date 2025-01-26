@@ -266,7 +266,8 @@
 
 (defclass deploy-console-op (deploy-op) ())
 
-(defmethod asdf:perform ((o deploy-op) (c asdf:system))
+(defmethod asdf:perform ((o deploy-console-op) (c asdf:system))
+  (pushnew :deploy-console *features*)
   (dump (asdf:output-file o c) :type :console))
 
 (defclass deploy-image-op (deploy-op) ())
@@ -276,7 +277,7 @@
     (values (list (make-pathname :type "core" :defaults file))
             T)))
 
-(defmethod asdf:perform ((o deploy-op) (c asdf:system))
+(defmethod asdf:perform ((o deploy-image-op) (c asdf:system))
   (dump (asdf:output-file o c) :type :image))
 
 (defun dump (file &key (type :executable))
