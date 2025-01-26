@@ -194,11 +194,14 @@
 (defmethod library-soname ((path pathname))
   (or #+linux
       (ignore-errors
-       (string-right-trim 
-        '(#\Linefeed)
-        (uiop:run-program (list "patchelf" "--print-soname" (uiop:native-namestring path)) :output :string)))
+       (let ((out (uiop:run-program (list "patchelf" "--print-soname" (uiop:native-namestring path)) :output :string)))
+         (string-right-trim '(#\Linefeed) out)))
       #+darwin
-      ()
+      (ignore-errors
+       (let ((out (uiop:run-program (list "otool" "-D" (uiop:native-namestring path)) :output :string)))
+         (subseq out (or (position #\/ out :from-end T)
+                         (position #\Space out :from-end T)
+                         (position #\Linefeed out :from-end T)))))
       (pathname-name path)))
 
 (defmethod library-dependencies ((path pathname))
