@@ -77,12 +77,13 @@
                   #+darwin (env-paths "DYLD_LIBRARY_PATH"))))
 
 (defun elf-file-p (path)
-  (with-open-file (elf path :element-type '(unsigned-byte 8) :if-does-not-exist :error)
-    ;; All ELF files begin with the same four bytes
-    (and (= (read-byte elf) #x7f)
-         (= (read-byte elf) #x45)
-         (= (read-byte elf) #x4c)
-         (= (read-byte elf) #x46))))
+  (ignore-errors
+   (with-open-file (elf path :element-type '(unsigned-byte 8) :if-does-not-exist :error)
+     ;; All ELF files begin with the same four bytes
+     (and (= (read-byte elf) #x7f)
+          (= (read-byte elf) #x45)
+          (= (read-byte elf) #x4c)
+          (= (read-byte elf) #x46)))))
 
 (defun follow-ld-script (path)
   (if (elf-file-p path)
@@ -124,6 +125,18 @@
 (defmethod library-name (library)
   (library-name (ensure-library library)))
 
+(defmethod library-soname ((library library))
+  (library-soname (library-path library)))
+
+(defmethod library-soname (library)
+  (library-soname (ensure-library library)))
+
+(defmethod library-dependencies ((library library))
+  (library-dependencies (library-path library)))
+
+(defmethod library-dependencies (library)
+  (library-dependencies (ensure-library library)))
+
 (defmethod open-library ((library library))
   #+cffi (cffi:load-foreign-library (library-name library)))
 
@@ -149,3 +162,74 @@
                  ,@initargs)
   #-cffi
   (make-instance 'library ,@initargs))
+
+(defmethod patch-soname ((library library))
+  (patch-soname (library-path library)))
+
+(defmethod patch-soname (library)
+  (patch-soname (ensure-library library)))
+
+(defmethod patch-dependencies ((library library) changes)
+  (patch-dependencies (library-path library) changes))
+
+(defmethod patch-dependencies (library changes)
+  (patch-dependencies (ensure-library library) changes))
+
+(defmethod patch-dependencies ((path pathname) (changes (eql T)))
+  (patch-dependencies
+   path
+   (let* ((locals #-(or darwin windows) (remove-if-not #'elf-file-p (directory-contents path))
+                  #+darwin (directory-contents path :type "dylib")
+                  #+windows (directory-contents path :type "dll"))
+          (locals (loop for local in locals
+                        for soname = (library-soname local)
+                        when soname collect (list soname local))))
+     (loop for dependency in (library-dependencies path)
+           for relative = (loop for (soname local) in locals
+                                when (string= soname dependency)
+                                do (return (file-namestring local)))
+           when (and relative (string/= dependency relative))
+           collect (list dependency relative)))))
+
+(defmethod library-soname ((path pathname))
+  (or #+linux
+      (ignore-errors
+       (string-right-trim 
+        '(#\Linefeed)
+        (uiop:run-program (list "patchelf" "--print-soname" (uiop:native-namestring path)) :output :string)))
+      #+darwin
+      ()
+      (pathname-name path)))
+
+(defmethod library-dependencies ((path pathname))
+  #+linux
+  (split #\Linefeed (uiop:run-program (list "patchelf" "--print-needed" (uiop:native-namestring path)) :output :string))
+  #+darwin
+  (let ((out (split #\Linefeed (uiop:run-program (list "otool" "-L" (uiop:native-namestring path)) :output :string))))
+    (loop for line in (cddr out) ; First two lines are the file itself again.
+          for trimmed = (string-trim '(#\Space #\Tab #\Linefeed #\Return) line)
+          for space = (position #\Space trimmed)
+          collect (if space (subseq trimmed 0 space) trimmed))))
+
+(defmethod patch-soname ((path pathname))
+  (let ((name (pathname-filename path)))
+    #+linux
+    (uiop:run-program (list "patchelf" "--set-soname" name (uiop:native-namestring path)))
+    #+darwin
+    (uiop:run-program (list "install_name_tool" "-id" name (uiop:native-namestring path)))))
+
+(defmethod patch-dependencies ((path pathname) (changes list))
+  (when changes
+    (status 2 "Patching dependencies of ~a:~{~%  ~{~a => ~a~}~}" path changes)
+    #+linux
+    (uiop:run-program (append (list "patchelf")
+                              (loop for (src dst) in changes
+                                    collect "--replace-needed"
+                                    collect src collect dst)
+                              (list (uiop:native-namestring path))))
+    #+darwin
+    (uiop:run-program (append (list "install_name_tool")
+                              (loop for (src dst) in changes
+                                    collect "-change"
+                                    collect src collect dst)
+                              (list (uiop:native-namestring path))))))

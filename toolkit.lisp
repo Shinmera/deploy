@@ -88,8 +88,8 @@
         (T
          (uiop:truenamize #p""))))
 
-(defun directory-contents (path)
-  (uiop:directory* (merge-pathnames uiop:*wild-file* path)))
+(defun directory-contents (path &key (type :wild))
+  (uiop:directory* (make-pathname :name :wild :type type :defaults path)))
 
 (defun copy-directory-tree (source target &key (copy-root T) (exclude (constantly NIL)) (if-exists :supersede))
   (labels ((r (path destination)
