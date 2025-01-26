@@ -215,14 +215,6 @@
           (when class (lambda () (make-instance class))))
         (error "~a's  entry point ~a is not coercable to a class or function!" c entry))))
 
-;; Do this before to trick ASDF's subsequent usage of UIOP:ENSURE-FUNCTION on the entry-point slot.
-(defmethod asdf:perform :before ((o deploy-op) (c asdf:system))
-  (let ((entry (discover-entry-point o c)))
-    (setf (asdf/system:component-entry-point c)
-          (lambda (&rest args)
-            (declare (ignore args))
-            (call-entry-prepared entry c o)))))
-
 (defmethod asdf:output-files ((o deploy-op) (c asdf:system))
   (let ((file #+nx (uiop:getenv "OUTPUT_CORE_PATH")
               #-nx (merge-pathnames (asdf/system:component-build-pathname c)
@@ -237,6 +229,12 @@
             T)))
 
 (defmethod asdf:perform :before ((o deploy-op) (c asdf:system))
+  ;; Do this before to trick ASDF's subsequent usage of UIOP:ENSURE-FUNCTION on the entry-point slot.
+  (let ((entry (discover-entry-point o c)))
+    (setf (asdf/system:component-entry-point c)
+          (lambda (&rest args)
+            (declare (ignore args))
+            (call-entry-prepared entry c o))))
   (status 0 "Running load hooks.")
   (run-hooks :load :system c :op o)
   (status 0 "Gathering system information.")
