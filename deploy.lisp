@@ -130,6 +130,7 @@
 (define-hook (:build clear-asdf most-negative-fixnum) ()
   (asdf:clear-configuration)
   (setf (fdefinition 'asdf:upgrade-asdf) (lambda ()))
+  #+quicklisp (setf ql:*local-project-directories* ())
   (dolist (system (asdf:already-loaded-systems))
     (asdf:register-immutable-system system)
     (asdf:clear-system system)))
