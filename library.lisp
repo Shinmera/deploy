@@ -1,9 +1,8 @@
 (in-package #:org.shirakumo.deploy)
 
+(defvar *foreign-libraries-to-reload* ())
 (defparameter *system-source-directories*
-  (list #+windows (or #+(or allegro clisp clozure cmucl gcl lispworks sbcl scl xcl)
-                      (first (uiop:raw-command-line-arguments))
-                      #+(or clasp ecl) (si:argv 0) #+mkcl (mkcl:argv 0))
+  (list #+windows (first (command-line-arguments))
         #+windows #p"C:/Windows/system32/"
         #+(and windows x86) #p"C:/Windows/SysWoW64/"
         #+windows #p"C:/Windows/"
@@ -19,7 +18,7 @@
         #+unix #p"/usr/lib/*/"
         #+darwin #p"/opt/local/lib"
         #+darwin #p"/usr/local/Cellar/**/lib/"
-        #+nx (merge-pathnames "nro/" (uiop:getenv "DATA_DIRECTORY"))))
+        #+nx (merge-pathnames "nro/" (getenv "DATA_DIRECTORY"))))
 
 (defun list-libraries ()
   (mapcar #'ensure-library
@@ -67,9 +66,9 @@
                         for result = (eval form)
                         append (if (listp result) result (list result)))
                   *system-source-directories*
-                  #+windows (env-paths "PATH")
-                  #+(and unix (not darwin)) (env-paths "LD_LIBRARY_PATH")
-                  #+darwin (env-paths "DYLD_LIBRARY_PATH"))))
+                  #+windows (envvar-directories "PATH")
+                  #+(and unix (not darwin)) (envvar-directories "LD_LIBRARY_PATH")
+                  #+darwin (envvar-directories "DYLD_LIBRARY_PATH"))))
 
 (defun elf-file-p (path)
   (ignore-errors
@@ -83,12 +82,12 @@
 (defun follow-ld-script (path)
   (if (elf-file-p path)
       path
-      (let* ((file-lines (uiop:read-file-lines path))
-             (group-line (first (remove-if-not (lambda (line)
-                                                 (uiop:string-prefix-p "GROUP ( " line))
-                                               file-lines)))
-             (path-to-lib (fourth (uiop:split-string group-line :separator "( )"))))
-        path-to-lib)))
+      (with-open-file (stream path :if-does-not-exist NIL)
+        (when stream
+          (loop for line = (read-line stream NIL NIL)
+                while line
+                do (when (string= "GROUP (" line :end2 (length "GROUP ("))
+                     (return (first (split #\  line :start "GROUP (" :end (position #\) line))))))))))
 
 (defun ensure-shared-library-file (path)
   "Some linux distributions keep ld scripts in the lib directories as links, follow them if necessary"
@@ -156,7 +155,7 @@
                  'library
                  ,@initargs)
   #-cffi
-  (make-instance 'library ,@initargs))
+  `(make-instance 'library ,@initargs))
 
 (defmethod patch-soname ((library library))
   (patch-soname (library-path library)))
@@ -187,23 +186,23 @@
            collect (list dependency relative)))))
 
 (defmethod library-soname ((path pathname))
-  (or #+linux
+  (or #+(and asdf3 linux)
       (ignore-errors
-       (let ((out (uiop:run-program (list "patchelf" "--print-soname" (uiop:native-namestring path)) :output :string)))
+       (let ((out (uiop:run-program (list "patchelf" "--print-soname" (pathname-utils:native-namestring path)) :output :string)))
          (string-right-trim '(#\Linefeed) out)))
-      #+darwin
+      #+(and asdf3 darwin)
       (ignore-errors
-       (let ((out (uiop:run-program (list "otool" "-D" (uiop:native-namestring path)) :output :string)))
+       (let ((out (uiop:run-program (list "otool" "-D" (pathname-utils:native-namestring path)) :output :string)))
          (subseq out (or (position #\/ out :from-end T)
                          (position #\Space out :from-end T)
                          (position #\Linefeed out :from-end T)))))
       (pathname-name path)))
 
 (defmethod library-dependencies ((path pathname))
-  #+linux
-  (split #\Linefeed (uiop:run-program (list "patchelf" "--print-needed" (uiop:native-namestring path)) :output :string))
-  #+darwin
-  (let ((out (split #\Linefeed (uiop:run-program (list "otool" "-L" (uiop:native-namestring path)) :output :string))))
+  #+(and asdf3 linux)
+  (split #\Linefeed (uiop:run-program (list "patchelf" "--print-needed" (pathname-utils:native-namestring path)) :output :string))
+  #+(and asdf3 darwin)
+  (let ((out (split #\Linefeed (uiop:run-program (list "otool" "-L" (pathname-utils:native-namestring path)) :output :string))))
     (loop for line in (cddr out) ; First two lines are the file itself again.
           for trimmed = (string-trim '(#\Space #\Tab #\Linefeed #\Return) line)
           for space = (position #\Space trimmed)
@@ -211,23 +210,77 @@
 
 (defmethod patch-soname ((path pathname))
   (let ((name (pathname-filename path)))
-    #+linux
-    (uiop:run-program (list "patchelf" "--set-soname" name (uiop:native-namestring path)))
-    #+darwin
-    (uiop:run-program (list "install_name_tool" "-id" name (uiop:native-namestring path)))))
+    #+(and asdf3 linux)
+    (uiop:run-program (list "patchelf" "--set-soname" name (pathname-utils:native-namestring path)))
+    #+(and asdf3 darwin)
+    (uiop:run-program (list "install_name_tool" "-id" name (pathname-utils:native-namestring path)))))
 
 (defmethod patch-dependencies ((path pathname) (changes list))
   (when changes
     (status 2 "Patching dependencies of ~a:~{~%  ~{~a => ~a~}~}" path changes)
-    #+linux
+    #+(and asdf3 linux)
     (uiop:run-program (append (list "patchelf")
                               (loop for (src dst) in changes
                                     collect "--replace-needed"
                                     collect src collect dst)
-                              (list (uiop:native-namestring path))))
-    #+darwin
+                              (list (pathname-utils:native-namestring path))))
+    #+(and asdf3 darwin)
     (uiop:run-program (append (list "install_name_tool")
                               (loop for (src dst) in changes
                                     collect "-change"
                                     collect src collect dst)
-                              (list (uiop:native-namestring path))))))
+                              (list (pathname-utils:native-namestring path))))))
+
+#+cffi
+(define-hook (:deploy foreign-libraries) (directory)
+  #+nx (setf directory (merge-pathnames "nro/" directory))
+  (ensure-directories-exist directory)
+  (dolist (lib #+sb-core-compression (list* (ensure-library 'compression-lib) (list-libraries))
+               #-sb-core-compression (list-libraries))
+    (with-simple-restart (continue "Ignore and continue deploying.")
+      (unless (library-dont-deploy-p lib)
+        (unless (library-path lib)
+          #-nx
+          (restart-case (error "~a does not have a known shared library file path." lib)
+            (provide-path (path)
+              :report "Provide the path to the library manually."
+              :interactive query-for-library-path
+              (setf (library-path lib) path)))
+          #+nx
+          (progn (warn "~a does not have a known shared library file path." lib)
+                 (continue)))
+        (let ((target (make-pathname :directory (pathname-directory directory)
+                                     :device (pathname-device directory)
+                                     :host (pathname-host directory)
+                                     :defaults (library-path lib))))
+          (when (or (not (probe-file target))
+                    (< (file-write-date target)
+                       (file-write-date (library-path lib))))
+            (status 1 "Copying library ~a" lib)
+            (copy-file (library-path lib) target))
+          ;; Force the library spec
+          (setf (slot-value lib 'cffi::spec) `((T ,(file-namestring target)))))))))
+
+(define-hook (:build foreign-libraries (+ most-negative-fixnum 10)) ()
+  (dolist (lib (list-libraries))
+    (let (#+sbcl(sb-ext:*muffled-warnings* 'style-warning))
+      (when (library-open-p lib)
+        (status 1 "Closing foreign library ~a." lib)
+        (close-library lib))
+      ;; Clear out deployment system data
+      (setf (library-path lib) NIL)
+      (setf (library-sources lib) NIL)
+      #+cffi (setf (slot-value lib 'cffi::pathname) NIL)))
+  #+cffi (setf cffi:*foreign-library-directories* NIL))
+
+(define-hook (:boot foreign-libraries (- most-positive-fixnum 10)) ()
+  (status 0 "Reloading foreign libraries.")
+  (flet ((maybe-load (lib)
+           (let ((lib (ensure-library lib))
+                 #+sbcl(sb-ext:*muffled-warnings* 'style-warning))
+             (unless (or (library-open-p lib)
+                         (library-dont-open-p lib))
+               (status 1 "Loading foreign library ~a." lib)
+               (open-library lib)))))
+    (dolist (lib *foreign-libraries-to-reload*)
+      (maybe-load lib))))

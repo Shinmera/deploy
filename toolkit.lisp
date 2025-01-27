@@ -1,38 +1,12 @@
 (in-package #:org.shirakumo.deploy)
 
+(defvar *here* #.(make-pathname :name NIL :type NIL :defaults (or *compile-file-pathname* *load-pathname*)))
 (defparameter *data-location* #p"")
 (defparameter *status-output* T)
 
 (defun data-directory ()
   (let ((run (runtime-directory)))
     (make-pathname :host (pathname-host run) :defaults (merge-pathnames *data-location* run))))
-
-(defun parent-directory (path)
-  (make-pathname :name NIL :type NIL
-                 :device (pathname-device path)
-                 :host (pathname-host path)
-                 :directory (butlast (pathname-directory path))))
-
-(defun find-relative-path-to (target source)
-  (let ((directory (list :relative))
-        (temp (make-pathname :directory (copy-list (pathname-directory source))
-                             :defaults source)))
-    (unless (equal (pathname-host target) (pathname-host source))
-      (error "Cannot find a relative path from ~a to ~a: different hosts" source target))
-    (unless (equal (pathname-device target) (pathname-device source))
-      (error "Cannot find a relative path from ~a to ~a: different hosts" source target))
-    (loop until (loop for a in (rest (pathname-directory target))
-                      for b in (rest (pathname-directory temp))
-                      always (equal a b))
-          do (unless (rest (pathname-directory temp))
-               (error "Cannot find a relative path from ~a to ~a." source target))
-             (push :up directory)
-             (setf temp (make-pathname :directory (butlast (pathname-directory temp))
-                                       :defaults temp)))
-    (loop for dir in (nthcdr (length (pathname-directory temp))
-                             (pathname-directory target))
-          do (push dir directory))
-    (make-pathname :directory (nreverse directory))))
 
 (defun make-lib-pathname (name)
   (make-pathname :name (string name)
@@ -47,11 +21,6 @@
   (format NIL "~a~@[.~a~]"
           (pathname-name path) (pathname-type path)))
 
-(defun discover-subdirectories (path)
-  (labels ((r (path)
-             (list* path (mapc #'r (uiop:subdirectories path)))))
-    (r (uiop:pathname-directory-pathname path))))
-
 (defun status (level format-string &rest format-args)
   (when *status-output*
     (format *status-output*
@@ -61,8 +30,44 @@
                            (T "    >"))
             format-string format-args)))
 
+(defun query-for-library-path ()
+  (format *query-io* "~&[DEPLOY] Enter the library path: ")
+  (finish-output *query-io*)
+  (list (pathname-utils:parse-native-namestring (read-line *query-io*))))
+
+(defun command-line-arguments ()
+  #+abcl ext:*command-line-argument-list*
+  #+allegro (sys:command-line-arguments)
+  #+(or clasp ecl) (loop :for i :from 0 :below (si:argc) :collect (si:argv i))
+  #+clisp (coerce (ext:argv) 'list)
+  #+clozure ccl:*command-line-argument-list*
+  #+cmucl  extensions:*command-line-strings*
+  #+mezzano nil
+  #+lispworks sys:*line-arguments-list*
+  #+sbcl sb-ext:*posix-argv*
+  ())
+
+(defun getenv (x)
+  #+(or abcl clasp clisp ecl xcl) (ext:getenv x)
+  #+allegro (sys:getenv x)
+  #+clozure (ccl:getenv x)
+  #+cmucl (unix:unix-getenv x)
+  #+lispworks (lispworks:environment-variable x)
+  #+sbcl (sb-ext:posix-getenv x)
+  #-(or abcl clasp clisp ecl xcl allegro clozure cmucl lispworks sbcl)
+  NIL)
+
+(defun envvar-directory (var)
+  (let ((var (getenv var)))
+    (when (and var (string/= "" var))
+      (pathname-utils:parse-native-namestring var :as :directory :junk-allowed T))))
+
+(defun envvar-directories (variable)
+  (mapcar (lambda (s) (pathname-utils:parse-native-namestring s :as :directory))
+          (split #+windows #\; #-windows #\: (or (getenv variable) ""))))
+
 (defun env-set-p (envvar)
-  (let ((value (uiop:getenv envvar)))
+  (let ((value (getenv envvar)))
     (when (and value (string/= "" value))
       value)))
 
@@ -80,20 +85,44 @@
               y m d hh mm ss))
     file))
 
+(defun featurep (feature)
+  (member feature *features* :test #'string=))
+
 (defun runtime-directory ()
-  (cond ((and (uiop:featurep :nx) (deployed-p))
+  (cond ((and (featurep :nx) (deployed-p))
          (make-pathname :device "rom" :directory '(:absolute)))
-        ((uiop:argv0)
-         (uiop:truenamize (uiop:pathname-directory-pathname (uiop:argv0))))
+        ((first (command-line-arguments))
+         (pathname-utils:to-directory
+          (pathname-utils:parse-native-namestring (first (command-line-arguments)))))
         (T
-         (uiop:truenamize #p""))))
+         *default-pathname-defaults*)))
 
 (defun directory-contents (path &key (type :wild))
-  (uiop:directory* (make-pathname :name :wild :type type :defaults path)))
+  (directory (make-pathname :name :wild :type type :defaults path)))
+
+(defun copy-file (source target &key (if-exists :supersede))
+  (flet ((copy-file (source target)
+           (with-open-file (in source :element-type '(unsigned-byte 8))
+             (with-open-file (out target :element-type '(unsigned-byte 8) :if-exists :supersede)
+               (when out (loop with buffer = (make-array 4096 :element-type '(unsigned-byte 8))
+                               for read = (read-sequence buffer in)
+                               while (< 0 read)
+                               do (write-sequence buffer out :end read)))))))
+    (if (probe-file target)
+        (ecase if-exists
+          (:update
+           (when (< (file-write-date target) (file-write-date source))
+             (copy-file source target)))
+          ((:replace :supersede :overwrite) 
+           (copy-file source target))
+          ((NIL :ignore))
+          (:error
+           (error "The file~%  ~a~%already exists." target)))
+        (copy-file source target))))
 
 (defun copy-directory-tree (source target &key (copy-root T) (exclude (constantly NIL)) (if-exists :supersede))
   (labels ((r (path destination)
-             (cond ((uiop:directory-pathname-p path)
+             (cond ((pathname-utils:directory-p path)
                     (let ((tpath (merge-pathnames (format NIL "~a/" (car (last (pathname-directory path))))
                                                   destination)))
                       (dolist (subpath (directory-contents path))
@@ -103,17 +132,7 @@
                     (let ((destination (make-pathname :name (pathname-name path)
                                                       :type (pathname-type path)
                                                       :defaults destination)))
-                      (if (probe-file destination)
-                          (ecase if-exists
-                            (:update
-                             (when (< (file-write-date destination) (file-write-date path))
-                               (uiop:copy-file path destination)))
-                            ((:replace :supersede :overwrite) 
-                             (uiop:copy-file path destination))
-                            ((NIL :ignore))
-                            (:error
-                             (error "The file~%  ~a~%already exists." destination)))
-                          (uiop:copy-file path destination)))))))
+                      (copy-file path destination :if-exists if-exists))))))
     (if copy-root
         (r source target)
         (dolist (subpath (directory-contents source))
@@ -131,7 +150,7 @@
 (defun system-applicable-p (system-spec)
   (or (eql T system-spec)
       (and (symbolp system-spec)
-           (member (string system-spec) *features* :key #'string :test #'string=))
+           (featurep (string-upcase system-spec)))
       (and (consp system-spec)
            (ecase (first system-spec)
              ((or :or)
@@ -162,23 +181,20 @@
           when (system-applicable-p system-spec)
           append (resolve-inner-spec spec))))
 
-(defun split (split string)
+(defun split (split string &key (start 0) (end (length string)))
   (let ((out (make-string-output-stream))
         (pieces ()))
     (flet ((add ()
              (let ((string (get-output-stream-string out)))
                (unless (string= string "")
                  (push string pieces)))))
-      (loop for c across string
+      (loop for i from start below end
+            for c = (char string i)
             do (if (char= c split)
                    (add)
                    (write-char c out))
             finally (add))
       (nreverse pieces))))
-
-(defun env-paths (variable)
-  (mapcar (lambda (s) (uiop:parse-native-namestring (format NIL "~a/" s)))
-          (split #+windows #\; #-windows #\: (or (uiop:getenv variable) ""))))
 
 (defun parse-vars (file)
   (with-open-file (stream file)

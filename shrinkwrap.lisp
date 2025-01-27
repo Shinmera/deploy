@@ -2,7 +2,8 @@
 
 (defvar *sbcl-source-tree*
   (ignore-errors
-   (parent-directory (parent-directory (second (first (logical-pathname-translations "SYS")))))))
+   (pathname-utils:to-directory
+    (pathname-utils:pop-directory (second (first (logical-pathname-translations "SYS"))) 2))))
 
 (defun sbcl-path (path)
   (merge-pathnames path *sbcl-source-tree*))
@@ -102,7 +103,7 @@
 (defclass pie-shrinkwrap-op (shrinkwrap-op) ())
 
 (defun sbcl-pic-objs (cvars &key force)
-  (loop for file in (objs)
+  (loop for file in (sbcl-objs)
         for name = (pathname-name file)
         for pic = (make-pathname :name (format NIL "~a.pic" name) :type "o" :defaults file)
         do (when (or force (not (probe-file pic)))

@@ -1,7 +1,6 @@
 (in-package #:org.shirakumo.deploy)
 
-(defparameter *info-plist-template*
-  (merge-pathnames "Info.plist" (asdf:system-relative-pathname :deploy "Info.plist")))
+(defvar *info-plist-template* (merge-pathnames "Info.plist" *here*))
 (defvar *info-plist-readtable* (copy-readtable))
 
 (set-macro-character #\] (get-macro-character #\) *info-plist-readtable*)

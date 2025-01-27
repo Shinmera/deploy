@@ -1,5 +1,5 @@
 (asdf:defsystem deploy
-  :version "2.0.0"
+  :version "3.0.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :maintainer "Yukari Hafner <shinmera@tymoon.eu>"
@@ -10,14 +10,17 @@
   :serial T
   :components ((:file "package")
                (:file "toolkit")
-               (:file "library")
                (:file "hooks")
+               (:file "library")
                (:file "checksum")
                (:file "deploy")
-               (:file "osx")
+               (:file "asdf" :if-feature :asdf3)
+               (:file "osx" :if-feature :darwin)
+               (:file "nx" :if-feature (:and :sbcl :nx))
                (:file "shrinkwrap" :if-feature :sbcl)
                (:file "documentation"))
   :depends-on ((:feature (:not :mezzano) :cffi)
                :sha3
                :documentation-utils
+               :pathname-utils
                :trivial-features))

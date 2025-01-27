@@ -90,7 +90,6 @@ are taken:
 See LIST-LIBRARIES
 See *FOREIGN-LIBRARIES-TO-RELOAD*
 See *DATA-LOCATION*
-See FIND-RELATIVE-PATH-TO
 See RUN-HOOKS")
 
   (function deployed-p
@@ -352,7 +351,7 @@ See LIBRARY-SYSTEM
 See DISCOVER-SUBDIRECTORIES
 See CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
 See *SYSTEM-SOURCE-DIRECTORIES*
-See ENV-PATHS")
+See ENVVAR-DIRECTORIES")
 
   (function find-source-file
     "Attempt to find the source file of the library on the system.
@@ -471,14 +470,6 @@ See STATUS")
 
 See DATA-DIRECTORY")
 
-  (function find-relative-path-to
-    "Attempt to find a way to \"get to\" the target directory.
-
-This tries to construct a relative path from the
-source to the target pathname, using :UP transforms
-in the pathname. If no relative path can be found,
-an error is signalled.")
-
   (function make-lib-pathname
     "Create a pathname with the proper type for a library.
 
@@ -572,7 +563,7 @@ See CFFI:DEFINE-FOREIGN-LIBRARY")
 
 Empty subsequences are not included.")
 
-  (function env-paths
+  (function envvar-directories
     "Returns the paths contained in the given environment variable.
 
 For Windows systems, the split character is ;

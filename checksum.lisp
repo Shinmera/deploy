@@ -13,21 +13,23 @@
               until (< bytes (* 128 1024))))))
   state)
 
-(defun checksum-component (component &optional (state (sha3:sha3-init)))
-  (declare (type sha3:sha3-state state))
-  (when (typep component 'asdf:cl-source-file)
-    (checksum-file (asdf:component-pathname component) state :if-does-not-exist NIL))
-  (when (typep component 'asdf:parent-component)
-    (dolist (child (asdf:component-children component))
-      (checksum-component child state)))
-  state)
-
-(defun checksum-systems (&optional (state (sha3:sha3-init)))
-  (dolist (system (sort (asdf:already-loaded-systems) #'string<) state)
-    (checksum-component (asdf:find-system system) state)))
+(defun list-all-source-files ()
+  (let ((files ()))
+    #+asdf
+    (labels ((rec (component)
+               (when (typep component 'asdf:cl-source-file)
+                 (push (asdf:component-pathname component) files))
+               (when (typep component 'asdf:parent-component)
+                 (dolist (child (asdf:component-children component))
+                   (rec child)))))
+      (dolist (system (sort (asdf:already-loaded-systems) #'string<))
+        (rec system)))
+    (nreverse files)))
 
 (defun source-checksum ()
-  (sha3:sha3-final (checksum-systems) :output-bit-length 224))
+  (let ((state (sha3:sha3-init)))
+    (dolist (file (list-all-source-files) (sha3:sha3-final state :output-bit-length 224))
+      (checksum-file file state :if-does-not-exist NIL))))
 
 (define-hook (:build source-checksum) ()
   (when *source-checksum*

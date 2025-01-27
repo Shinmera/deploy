@@ -2,19 +2,26 @@
 (defpackage #:deploy
   (:nicknames #:org.shirakumo.deploy)
   (:use #:cl)
+  ;; asdf.lisp
+  (:export
+   #:clear-asdf)
   ;; checksum.lisp
   (:export
    #:*source-checksum*
+   #:*build-time*
+   #:list-all-source-files
    #:source-checksum)
   ;; deploy.lisp
   (:export
    #:*compression-factor*
+   #:deployed-p
    #:quit
    #:deploy-op
-   #:deploy-image-op
+   #:entry-point
+   #:output-file
+   #:deploy
    #:deploy-console-op
-   #:discover-entry-point
-   #:deployed-p)
+   #:deploy-image-op)
   ;; hooks.lisp
   (:export
    #:hook
@@ -41,10 +48,16 @@
    #:possible-pathnames
    #:find-source-file
    #:library-name
+   #:library-soname
+   #:library-dependencies
    #:open-library
    #:close-library
    #:library-open-p
-   #:define-library)
+   #:define-library
+   #:patch-soname
+   #:patch-dependencies
+   #:patch
+   #:foreign-libraries)
   ;; osx.lisp
   (:export
    #:*info-plist-template*
@@ -62,7 +75,13 @@
    #:*status-output*
    #:data-directory
    #:status
+   #:command-line-arguments
+   #:getenv
+   #:envvar-directory
+   #:envvar-directories
    #:env-set-p
    #:redirect-output
+   #:featurep
    #:runtime-directory
+   #:copy-file
    #:copy-directory-tree))
