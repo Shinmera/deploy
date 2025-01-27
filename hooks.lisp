@@ -3,19 +3,27 @@
 (defvar *hooks* ())
 
 (defclass hook ()
-  ((name :initarg :name :accessor hook-name)
-   (type :initarg :type :accessor hook-type)
-   (function :initarg :function :accessor hook-function)
-   (priority :initarg :priority :accessor hook-priority))
-  (:default-initargs
-   :name (error "NAME required.")
-   :type (error "TYPE required.")
-   :function (constantly NIL)
-   :priority 0))
+  ((name :initarg :name :initform (error "NAME required.") :accessor hook-name)
+   (type :initarg :type :initform (error "TYPE required.") :accessor hook-type)
+   (function :initarg :function :initform (constantly NIL) :accessor hook-function)
+   (priority :initarg :priority :initform 0 :accessor hook-priority)
+   (documentation :initarg :documentation :initform NIL :accessor docstring)))
 
 (defmethod print-object ((hook hook) stream)
   (print-unreadable-object (hook stream :type T)
     (format stream "~a ~a" (hook-type hook) (hook-name hook))))
+
+(defmethod documentation ((hook hook) type)
+  (docstring hook))
+
+(defmethod (setf documentation) (value (hook hook) type)
+  (setf (docstring hook) value))
+
+(defmethod documentation ((spec cons) (type (eql 'hook)))
+  (docstring (or (apply #'hook spec) (error "No hook matching spec ~s" spec))))
+
+(defmethod (setf documentation) (value (spec cons) (type (eql 'hook)))
+  (setf (docstring (or (apply #'hook spec) (error "No hook matching spec ~s" spec))) value))
 
 (defun hook (type name)
   (loop for hook in *hooks*
@@ -44,6 +52,7 @@
                                           ,@body))
                                    #',name))
      (setf (hook ,type ',name) ,name)
+     (setf (docstring ,name) ,(if (stringp (car body)) (car body)))
      ',name))
 
 (defun run-hooks (type &rest args)
