@@ -56,7 +56,6 @@
    #:define-library
    #:patch-soname
    #:patch-dependencies
-   #:patch
    #:foreign-libraries)
   ;; osx.lisp
   (:export

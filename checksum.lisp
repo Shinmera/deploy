@@ -22,13 +22,14 @@
                (when (typep component 'asdf:parent-component)
                  (dolist (child (asdf:component-children component))
                    (rec child)))))
-      (dolist (system (sort (asdf:already-loaded-systems) #'string<))
+      (dolist (system (asdf:already-loaded-systems))
         (rec system)))
     (nreverse files)))
 
-(defun source-checksum ()
-  (let ((state (sha3:sha3-init)))
-    (dolist (file (list-all-source-files) (sha3:sha3-final state :output-bit-length 224))
+(defun source-checksum (&optional (files (list-all-source-files)))
+  (let ((state (sha3:sha3-init))
+        (files (sort (mapcar #'truename files) #'string<)))
+    (dolist (file files (sha3:sha3-final state :output-bit-length 224))
       (checksum-file file state :if-does-not-exist NIL))))
 
 (define-hook (:build source-checksum) ()

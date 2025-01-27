@@ -242,10 +242,10 @@
         (unless (library-path lib)
           #-nx
           (restart-case (error "~a does not have a known shared library file path." lib)
-            (provide-path (path)
+            (use-value (value)
               :report "Provide the path to the library manually."
               :interactive query-for-library-path
-              (setf (library-path lib) path)))
+              (setf (library-path lib) value)))
           #+nx
           (progn (warn "~a does not have a known shared library file path." lib)
                  (continue)))

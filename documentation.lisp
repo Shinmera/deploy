@@ -1,5 +1,41 @@
 (in-package #:org.shirakumo.deploy)
 
+;; asdf.lisp
+(docs:define-docs
+  (hook (:build clear-asdf)
+    "Clears the ASDF configuration and freezes it in place.
+
+This prevents issues with calling ASDF or UIOP functions
+after the image has been dumped and resumed on another
+setup that does not match the build host's."))
+
+;; checksum.lisp
+(docs:define-docs
+  (variable *source-checksum*
+    "If true pre-build, is set to the checksum of all source files on build.
+
+See SOURCE-CHECKSUM")
+
+  (variable *build-time*
+    "If true pre-build, is set to the universal-time on build.")
+
+  (function list-all-source-files
+    "Returns a list of all source files of the current system state, if possible.
+
+If ASDF is available this uses the list of loaded system and their
+descriptions to compute the list.")
+
+  (function source-checksum
+    "Computes a checksum of the given source files.
+
+The source files are sorted by their truenames in order to ensure
+consistency regardless of order.
+
+By default the output of LIST-ALL-SOURCE-FILES is used.
+
+See LIST-ALL-SOURCE-FILES
+See *SOURCE-CHECKSUM*"))
+
 ;; deploy.lisp
 (docs:define-docs
   (variable *foreign-libraries-to-reload*
@@ -7,6 +43,17 @@
 
 The variable is set during deployment and should not be
 modified unless you know what you're doing.")
+
+  (function deployed-p
+    "Returns T if the current Lisp environment has been booted from a deployed executable.")
+
+  (function quit
+    "Runs the quit hooks and terminates the application.
+
+If an error occurs during the execution of a quit hook, it
+is ignored.
+
+See RUN-HOOKS")
 
   (function warmly-boot
     "Perform a warm boot.
@@ -19,14 +66,6 @@ This will also run all :BOOT hooks with the appropriate
 arguments supplied.
 
 See CFFI:*FOREIGN-LIBRARY-DIRECTORIES*
-See RUN-HOOKS")
-
-  (function quit
-    "Runs the quit hooks and terminates the application.
-
-If an error occurs during the execution of a quit hook, it
-is ignored.
-
 See RUN-HOOKS")
 
   (function call-entry-prepared
@@ -50,17 +89,10 @@ value.
 See WARMLY-BOOT
 See REDIRECT-OUTPUT")
 
-  (function discover-entry-point
-    "Attempt to resolve the given ASDF system's entry point to a function.
-
-The entry point may be either a function or a class
-designator. If a class, returned is a function that
-simply instantiates the class.
-
-See ASDF/SYSTEM:COMPONENT-ENTRY-POINT")
-
   (type deploy-op
-    "An ASDF operation to perform a deployment.
+    "An operation to perform a deployment.
+
+When ASDF is available, this is also an ASDF:OPERATION.
 
 When this operation is performed, the following steps
 are taken:
@@ -83,17 +115,75 @@ are taken:
    arguments.
 8. The image is dumped to an executable format, using
    core compression if available, and using the
-   appropriate application type depending on the
-   presence of the operating system and the
-   :DEPLOY-CONSOLE feature flag.
+   appropriate application type.
 
+See DEPLOY
+See ENTRY-POINT
+See OUTPUT-FILE
 See LIST-LIBRARIES
 See *FOREIGN-LIBRARIES-TO-RELOAD*
 See *DATA-LOCATION*
 See RUN-HOOKS")
 
-  (function deployed-p
-    "Returns T if the current Lisp environment has been booted from a deployed executable."))
+  (type deploy-console-op
+    "An operation to perform a console application deployment.
+
+This is similar to DEPLOY-OP, but enforcing the DEPLOY-CONSOLE flag.
+
+See DEPLOY-OP
+See DEPLOY")
+
+  (type deploy-image-op
+    "An operation to perform an image deployment.
+
+This is similar to DEPLOY-OP, but enforcing the DEPLOY-IMAGE flag.
+
+See DEPLOY-OP
+See DEPLOY")
+
+  (function entry-point
+    "Accesses the image entry point of the deployment operation.
+
+If NIL the entry point will be the implementation's default, or in the
+case of an ASDF operation, the entry point specified in the system
+definition.
+
+See DEPLOY
+See DEPLOY-OP")
+
+  (function output-file
+    "Accesses the target output file of the deployment operation.
+
+If NIL a file will be picked for you. In the case of an ASDF
+operation, this will be a file named after the system being operated
+on, and the directory will be a subdirectory called bin/ within the
+system's source directory. Otherwise the bin/ directory within
+Deploy's source directory will be used and the name will simply be
+\"application\".
+
+See DEPLOY
+See DEPLOY-OP")
+
+  (function deploy
+    "Performs a deployment.
+
+If the target is a pathname, a deployment is performed directly
+without running any hooks.
+
+If the target is a symbol, an operation object is created according to
+that symbol's type and the extra arguments provided.
+
+If the target is an operation object,  deployment is performed
+according to that operation, running hooks as needed, ultimately
+running DEPLOY with the intended target pathname.
+
+If an ENTRY-POINT is given, that function will be invoked on boot. If
+a TYPE is given, it designates the kind of deployment to perform. It
+may be one of
+
+  :EXECUTABLE -- A GUI application is deployed.
+  :CONSOLE    -- A console application is deployed.
+  :IMAGE      -- An image core file is deployed."))
 
 ;; hooks.lisp
 (docs:define-docs
@@ -362,27 +452,44 @@ to look for the library source.
 The directories are searched for pathnames that
 match one of the POSSIBLE-PATHNAMES for the library.
 
+See LIBRARY
 See POSSIBLE-DIRECTORIES
 See POSSIBLE-PATHNAMES")
 
   (function library-name
     "Return the library's name.
 
-See CFFI:FOREIGN-LIBRARY-NAME")
+See CFFI:FOREIGN-LIBRARY-NAME
+See LIBRARY")
+
+  (function library-soname
+    "Return the library's encoded soname, if possible.
+
+See LIBRARY")
+
+  (function library-dependencies
+    "Return the library's dependant libraries, if possible.
+
+The returned value is a list of string names of the libraries.
+
+See LIBRARY")
 
   (function open-library
     "Open/load the library.
 
+See LIBRARY
 See CFFI:LOAD-FOREIGN-LIBRARY")
 
   (function close-library
     "Close/unload the library.
 
+See LIBRARY
 See CFFI:CLOSE-FOREIGN-LIBRARY")
 
   (function library-open-p
     "Returns whether the library is currently open.
 
+See LIBRARY
 See CFFI:FOREIGN-LIBRARY-LOADED-P")
 
   (function define-library
@@ -403,7 +510,48 @@ See LIBRARY-SYSTEM
 See LIBRARY-SOURCES
 See LIBRARY-PATH
 See LIBRARY-DONT-OPEN-P
-See LIBRARY-DONT-DEPLOY-P"))
+See LIBRARY-DONT-DEPLOY-P")
+
+  (function patch-soname
+    "Patch the library's encoded soname to match the file name.
+
+Can be invoked with a LIBRARY, a LIBRARY designator, or a pathname of
+the library file to patch.
+
+See LIBRARY")
+
+  (function patch-dependencies
+    "Patch the library's encoded dependencies to match the given spec.
+
+The spec should be a list of lists, each inner list having two
+elements, the first being the name of the dependency to change, and
+the second being the name to change it to.
+
+Can be invoked with a LIBRARY, a LIBRARY designator, or a pathname of
+the library file to patch.
+
+See LIBRARY")
+
+  (hook (:deploy foreign-libraries)
+    "Gathers foreign library files and copies them to the deployment output path.
+
+This will adjust the library spec to be fixed to the specific pathname
+it has, to ensure it will be loaded when it is requested again later
+on boot.
+
+Deploy will do a best-effort scan to find the library file, but if
+this fails, it will signal a continuable error with a USE-VALUE
+restart active.")
+
+  (hook (:build foreign-libraries)
+    "Closes all foreign libraries and cleans out their registered paths.
+
+This will also clear out CFFI's foreign library directory list.")
+
+  (hook (:boot foreign-libraries)
+    "Reloads all needed foreign libraries.
+
+See *FOREIGN-LIBRARIES-TO-RELOAD*"))
 
 ;; osx.lisp
 (docs:define-docs
@@ -443,6 +591,40 @@ with Deploy for what's possible.
 
 See *INFO-PLIST-TEMPLATE*"))
 
+;; shrinkwrap.lisp
+(docs:define-docs
+  (variable *sbcl-source-tree*
+    "Path to the SBCL source tree's root.
+
+This tree must have already been used to build the same SBCL you want
+to deploy with.
+
+Will try to auto-detect the path based on the logical pathname
+translations of SYS.")
+
+  (function shrinkwrap
+    "Shrinkwrap the given ASDF system.
+
+This is the same as
+  (ASDF:OOS 'DEPLOY:SHRINKWRAP-OP system args...)
+
+See SHRINKWRAP-OP")
+
+  (function shrinkwrap-op
+    "An ASDF operation to produce a shrinkwrapped executable.
+
+Shrinkwrapping cannot be done in the same process, so this will start
+foreign processes to drive the build.
+
+It proceeds as follows:
+
+1. Run DEPLOY-IMAGE-OP on the system to produce a full core.
+2. Run the elftool to split the core into a symbol and object file.
+3. Run the C compiler and linker to assemble a fully shrinkwrapped
+   executable. This will use the same path as DEPLOY-OP.
+
+See *SBCL-SOURCE-TREE*"))
+
 ;; toolkit.lisp
 (docs:define-docs
   (variable *data-location*
@@ -470,22 +652,6 @@ See STATUS")
 
 See DATA-DIRECTORY")
 
-  (function make-lib-pathname
-    "Create a pathname with the proper type for a library.
-
-The type is OS-dependent.
-Linux: \"so\"
-Darwin: \"dylib\"
-Windows: \"dll\"")
-
-  (function pathname-filename
-    "Return the full file name of the pathname as a string.")
-
-  (function discover-subdirectories
-    "Return a list of all directories contained in the path.
-
-This includes the path itself.")
-
   (function status
     "Print a status message to *status-output*.
 
@@ -493,6 +659,24 @@ The level determines the granularity of the message.
 Higher levels mean \"more detailed\".
 
 See *STATUS-OUTPUT*")
+
+  (function envvar
+    "Returns the value of the given environment variable.
+
+May return NIL or an empty string if the variable is unset.")
+
+  (function envvar-directory
+    "Returns the environment variable as a pathname directory.
+
+See ENVVAR")
+
+  (function envvar-directories
+    "Returns the paths contained in the given environment variable.
+
+For Windows systems, the split character is ;
+otherwise it is :
+
+See ENVVAR")
 
   (function env-set-p
     "Returns the value of the given environment variable if it is set to a non-empty value.")
@@ -506,23 +690,18 @@ only its output stream is changed.
 
 The stream to the given target file is returned.")
 
+  (function featurep
+    "Returns true if the given name names a feature.
+
+See CL:*FEATURES*")
+
   (function runtime-directory
     "Returns a pathname to the directory where the executable is being run in.
 
 See UIOP:ARGV0")
 
-  (function directory-contents
-    "Returns all files and subdirectories within the given pathname's directory.")
-
-  (function copy-directory-tree
-    "Copy the source directory to the target directory.
-
-If COPY-ROOT is true, the source folder itself is
-copied, otherwise only its contents are copied.
-
-EXCLUDE may be a function of one argument, a source path, which
-returns a boolean designating whether the source file should be
-excluded or not.
+  (function copy-file
+    "Copy the source to the target file.
 
 IF-EXISTS may be one of the following values, governing what to do if
 the destination file exists already:
@@ -534,40 +713,18 @@ the destination file exists already:
       --- Signals an error
   :UPDATE
       --- Replaces the file if its write date is older than the source
-          file's")
+          file's
 
-  (function xml-escape
-    "Escape the string for XML.
+See COPY-DIRECTORY-TREE")
 
-The following replacements are made:
- \"<\" => \"&lt;\"
- \">\" => \"&gt;\"
- \"&\" => \"&amp;")
+  (function copy-directory-tree
+    "Copy the source directory to the target directory.
 
-  (function system-applicable-p
-    "Returns T if the system-spec is applicable for the current system.
+If COPY-ROOT is true, the source folder itself is
+copied, otherwise only its contents are copied.
 
-If system-spec is T, this returns T. Otherwise T is
-returned if the system-spec is in *FEATURES*.")
+EXCLUDE may be a function of one argument, a source path, which
+returns a boolean designating whether the source file should be
+excluded or not.
 
-  (function resolve-cffi-spec
-    "Resolve the CFFI foreign library spec to a list of usable pathnames.
-
-This is the spec as used in CFFI:DEFINE-FOREIGN-
-LIBRARY.
-
-See CFFI:DEFINE-FOREIGN-LIBRARY")
-
-  (function split
-    "Split the string on each split character.
-
-Empty subsequences are not included.")
-
-  (function envvar-directories
-    "Returns the paths contained in the given environment variable.
-
-For Windows systems, the split character is ;
-otherwise it is :
-
-See SPLIT
-See ENVVAR"))
+See COPY-FILE"))
