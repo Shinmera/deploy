@@ -2,7 +2,7 @@
 This is a system to help you easily and quickly deploy standalone common lisp applications as binaries. Specifically it is geared towards applications with foreign library dependencies that run some kind of GUI.
 
 ## How To
-In order to make use of Deploy, you'll have to change the ASDF system definition of your project to contain the following properties:
+Probably the easiest way to use Deploy is with ASDF. To integrate it, change your system definition to include the following properties:
 
     :defsystem-depends-on (:deploy)
     :build-operation "deploy-op"
@@ -17,13 +17,16 @@ This will build your system, gather the necessary information, and deploy a stan
 
 If you want to deploy a console application rather than a GUI application, you should use ``deploy-console-op`` instead, which will activate the proper mode on Windows, and suppress the standard startup output.
 
-You can also leverage deploy to "just" dump an image of your implementation state rather than a standalone executable. In that case, you should use the ``deploy-image-op``.
+You can also leverage deploy to "just" create an image of your implementation state rather than a standalone executable. In that case, you should use the ``deploy-image-op``.
 
 With SBCL you can even leverage Deploy to create "shrinkwrapped" executables. These executables can statically or dynamically link C libraries and let Lisp stack frames integrate properly with foreign debuggers and profiling tools like perf. To produce a shrinkwrapped executable you must have the SBCL source tree available with which you already built your SBCL. Then you can create your executable by loading deploy and running
 
     (deploy:shrinkwrap "my-system")
 
 It'll automatically invoke itself again to run ``deploy-image-op`` on your system, shrinkwrap that, and then compile it together with the rest of the dynamic libraries it depends on into the final executable.
+
+## Without ASDF
+Deploy can also be used entirely without depending on ASDF or UIOP. After prepping everything you want, you can simply call ``deploy`` with either the name of the operation type you want to perform the usual kind of deployment, or directly with a pathname to deploy your executable to. In the latter case, it will *not* run any of the usual hooks and instead perform as plain of a deployment as possible.
 
 ## Customising Foreign Libraries
 Sometimes you might want to designate a specific library for deployment, rather than the one used during development. If this is the case, you have to help Deploy out a little by defining extra information about the library with `define-library`. If the foreign library is in the source tree of a lisp library, you can simply associate the CFFI library with the system that provides it, and Deploy will find it automatically:
