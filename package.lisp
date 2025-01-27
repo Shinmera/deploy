@@ -76,7 +76,7 @@
    #:data-directory
    #:status
    #:command-line-arguments
-   #:getenv
+   #:envvar
    #:envvar-directory
    #:envvar-directories
    #:env-set-p

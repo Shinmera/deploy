@@ -40,7 +40,7 @@
                                      #+(and nx asdf3) (uiop:print-backtrace)
                                      (invoke-restart 'exit 1))))))
         (when (env-set-p "DEPLOY_REDIRECT_OUTPUT")
-          (redirect-output (getenv "DEPLOY_REDIRECT_OUTPUT")))
+          (redirect-output (envvar "DEPLOY_REDIRECT_OUTPUT")))
         (apply #'warmly-boot args)
         (status 0 "Launching application.")
         (funcall entry-point)
@@ -98,7 +98,7 @@
 
 (defmethod output-file ((op deploy-op))
   (or (slot-value op 'output-file)
-      (let ((file #+nx (getenv "OUTPUT_CORE_PATH")
+      (let ((file #+nx (envvar "OUTPUT_CORE_PATH")
                   #-nx (merge-pathnames "bin/application" *here*)))
         (cond ((featurep :deploy-image)
                (make-pathname :type "core" :defaults file))
@@ -120,7 +120,7 @@
   (status 1 "Will load the following foreign libs on boot:
       ~s" *foreign-libraries-to-reload*)
   (let* ((file (output-file op))
-         (data #+nx (getenv "DATA_DIRECTORY")
+         (data #+nx (envvar "DATA_DIRECTORY")
                #-nx (pathname-utils:to-directory file)))
     (status 0 "Deploying files to ~a" data)
     (ensure-directories-exist file)

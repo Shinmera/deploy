@@ -47,7 +47,7 @@
   #+sbcl sb-ext:*posix-argv*
   ())
 
-(defun getenv (x)
+(defun envvar (x)
   #+(or abcl clasp clisp ecl xcl) (ext:getenv x)
   #+allegro (sys:getenv x)
   #+clozure (ccl:getenv x)
@@ -58,16 +58,16 @@
   NIL)
 
 (defun envvar-directory (var)
-  (let ((var (getenv var)))
+  (let ((var (envvar var)))
     (when (and var (string/= "" var))
       (pathname-utils:parse-native-namestring var :as :directory :junk-allowed T))))
 
 (defun envvar-directories (variable)
   (mapcar (lambda (s) (pathname-utils:parse-native-namestring s :as :directory))
-          (split #+windows #\; #-windows #\: (or (getenv variable) ""))))
+          (split #+windows #\; #-windows #\: (or (envvar variable) ""))))
 
 (defun env-set-p (envvar)
-  (let ((value (getenv envvar)))
+  (let ((value (envvar envvar)))
     (when (and value (string/= "" value))
       value)))
 
@@ -102,8 +102,8 @@
 
 (defun copy-file (source target &key (if-exists :supersede))
   (flet ((copy-file (source target)
-           (with-open-file (in source :element-type '(unsigned-byte 8))
-             (with-open-file (out target :element-type '(unsigned-byte 8) :if-exists :supersede)
+           (with-open-file (in source :element-type '(unsigned-byte 8) :direction :input)
+             (with-open-file (out target :element-type '(unsigned-byte 8) :direction :output :if-exists :supersede)
                (when out (loop with buffer = (make-array 4096 :element-type '(unsigned-byte 8))
                                for read = (read-sequence buffer in)
                                while (< 0 read)

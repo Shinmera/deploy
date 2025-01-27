@@ -18,7 +18,7 @@
         #+unix #p"/usr/lib/*/"
         #+darwin #p"/opt/local/lib"
         #+darwin #p"/usr/local/Cellar/**/lib/"
-        #+nx (merge-pathnames "nro/" (getenv "DATA_DIRECTORY"))))
+        #+nx (merge-pathnames "nro/" (envvar "DATA_DIRECTORY"))))
 
 (defun list-libraries ()
   (mapcar #'ensure-library

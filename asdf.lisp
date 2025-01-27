@@ -37,7 +37,7 @@
                   (error "~a's  entry point ~a is not coercable to a class or function!" c entry))))))
 
 (defmethod asdf:output-files ((o deploy-op) (c asdf:system))
-  (let ((default (let ((file #+nx (getenv "OUTPUT_CORE_PATH")
+  (let ((default (let ((file #+nx (envvar "OUTPUT_CORE_PATH")
                              #-nx (merge-pathnames (asdf/system:component-build-pathname c)
                                                    (asdf:system-relative-pathname c "bin/"))))
                    (cond ((featurep :deploy-image)

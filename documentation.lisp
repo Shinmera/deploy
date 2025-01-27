@@ -570,4 +570,4 @@ For Windows systems, the split character is ;
 otherwise it is :
 
 See SPLIT
-See UIOP:GETENV"))
+See ENVVAR"))
