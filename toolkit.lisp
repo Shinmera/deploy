@@ -4,10 +4,6 @@
 (defparameter *data-location* #p"")
 (defparameter *status-output* T)
 
-(defun data-directory ()
-  (let ((run (runtime-directory)))
-    (make-pathname :host (pathname-host run) :defaults (merge-pathnames *data-location* run))))
-
 (defun make-lib-pathname (name)
   (make-pathname :name (string name)
                  :type #+(and unix (not darwin)) "so"
@@ -44,18 +40,16 @@
   #+cmucl  extensions:*command-line-strings*
   #+mezzano nil
   #+lispworks sys:*line-arguments-list*
-  #+sbcl sb-ext:*posix-argv*
-  ())
+  #+sbcl sb-ext:*posix-argv*)
 
 (defun envvar (x)
+  (declare (ignorable x))
   #+(or abcl clasp clisp ecl xcl) (ext:getenv x)
   #+allegro (sys:getenv x)
   #+clozure (ccl:getenv x)
   #+cmucl (unix:unix-getenv x)
   #+lispworks (lispworks:environment-variable x)
-  #+sbcl (sb-ext:posix-getenv x)
-  #-(or abcl clasp clisp ecl xcl allegro clozure cmucl lispworks sbcl)
-  NIL)
+  #+sbcl (sb-ext:posix-getenv x))
 
 (defun envvar-directory (var)
   (let ((var (envvar var)))
@@ -93,9 +87,16 @@
          (make-pathname :device "rom" :directory '(:absolute)))
         ((first (command-line-arguments))
          (pathname-utils:to-directory
-          (pathname-utils:parse-native-namestring (first (command-line-arguments)))))
+          (truename
+           (pathname-utils:parse-native-namestring
+            (first (deploy:command-line-arguments))))))
         (T
          *default-pathname-defaults*)))
+
+(defun data-directory ()
+  (let ((run (runtime-directory)))
+    (make-pathname :host (pathname-host run)
+                   :defaults (merge-pathnames *data-location* run))))
 
 (defun directory-contents (path &key (type :wild))
   (directory (make-pathname :name :wild :type type :defaults path)))
