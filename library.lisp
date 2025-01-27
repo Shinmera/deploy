@@ -33,8 +33,7 @@
     (symbol #+cffi (ensure-library (cffi::get-foreign-library library)))))
 
 (defclass library (#+cffi cffi:foreign-library)
-  ((system :initarg :system :initform NIL :accessor library-system)
-   (sources :initarg :sources :initform () :accessor library-sources)
+  ((sources :initarg :sources :initform () :accessor library-sources)
    (path :initarg :path :initform NIL :accessor library-path)
    (dont-open :initarg :dont-open :initform NIL :accessor library-dont-open-p)
    (dont-deploy :initarg :dont-deploy :initform NIL :accessor library-dont-deploy-p)))
@@ -63,10 +62,6 @@
                           (when handle
                             (list (ccl::shlib.pathname handle))))
                   #+cffi (cffi::foreign-library-search-path library)
-                  (when (library-system library)
-                    (discover-subdirectories
-                     (asdf:system-source-directory
-                      (library-system library))))
                   #+cffi
                   (loop for form in cffi:*foreign-library-directories*
                         for result = (eval form)

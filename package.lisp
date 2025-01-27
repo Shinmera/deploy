@@ -33,7 +33,6 @@
    #:list-libraries
    #:ensure-library
    #:library
-   #:library-system
    #:library-sources
    #:library-path
    #:library-dont-open-p

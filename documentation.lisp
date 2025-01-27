@@ -292,21 +292,11 @@ Upon shared-initialize, if the LIBRARY-PATH is not
 explicitly set, it is resolved through FIND-SOURCE-
 FILE.
 
-See LIBRARY-SYSTEM
 See LIBRARY-SOURCES
 See LIBRARY-PATH
 See LIBRARY-DONT-OPEN-P
 See LIBRARY-DONT-DEPLOY-P
 See FIND-SOURCE-FILE")
-
-  (function library-system
-    "Accessor to the ASDF system associated with the library.
-
-If there is a system associated with this library,
-the system's source tree is used to search for the
-library's source file.
-
-See LIBRARY")
 
   (function library-sources
     "Accessor to the list of additional paths to search for source files.
