@@ -50,6 +50,11 @@
                       (setf (output-file o)  default)))
             T)))
 
+(defmethod asdf:output-files ((o deploy-image-op) (c asdf:system))
+  (let ((file (first (call-next-method))))
+    (values (list (make-pathname :type "core" :defaults file))
+            T)))
+
 (defmethod asdf:perform :before ((o deploy-op) (c asdf:system))
   ;; Do this before to trick ASDF's subsequent usage of UIOP:ENSURE-FUNCTION on the entry-point slot.
   (let ((entry (discover-entry-point o c)))
@@ -68,13 +73,12 @@
       (asdf:oos (apply #'make-instance o args) system)
       (deploy (apply #'make-instance o args) :type type)))
 
-;; hook ASDF
-(flet ((export! (symbol package)
-         (import symbol package)
-         (export symbol package)))
-  (export! 'deploy-op :asdf/bundle)
-  (export! 'deploy-op :asdf)
-  (export! 'deploy-image-op :asdf/bundle)
-  (export! 'deploy-image-op :asdf)
-  (export! 'deploy-console-op :asdf/bundle)
-  (export! 'deploy-console-op :asdf))
+(defun export-asdf (&rest ops)
+  (flet ((export! (symbol package)
+           (import symbol package)
+           (export symbol package)))
+    (dolist (op ops ops)
+      (export! op :asdf/bundle)
+      (export! op :asdf))))
+
+(export-asdf 'deploy-op 'deploy-image-op 'deploy-console-op)
