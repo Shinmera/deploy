@@ -121,3 +121,8 @@
       (run (first (cvar "CC" cvars))
            "-pie" "-o" bin symbol object (sbcl-pic-objs cvars)
            (link-libraries o cvars)))))
+
+(flet ((export! (symbol package)
+         (import symbol package)
+         (export symbol package)))
+  (export! 'shrinkwrap-op :asdf/bundle))
