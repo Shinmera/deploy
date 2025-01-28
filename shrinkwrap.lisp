@@ -19,6 +19,7 @@
              (string arg))))
     (let ((args (loop for arg in args
                       append (mapcar #'normalize (if (listp arg) arg (list arg))))))
+      (status 2 "Running ~a ~@<~@;~{~%~a~}~;~:>~%" program args)
       (unless (= 0 (sb-ext:process-exit-code
                     (sb-ext:run-program program args :search T :output *error-output*)))
         (error "Failed to run~%  ~a~{~%   ~a~}" program args)))))
