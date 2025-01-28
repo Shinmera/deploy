@@ -69,7 +69,7 @@
 
 (defmethod link-libraries ((o shrinkwrap-op) cvars)
   (delete-duplicates
-   (append (cvar "LIBS" cvars)
+   (append (remove "-lzstd" (cvar "LIBS" cvars) :test #'string=)
            (loop for lib in (list-libraries)
                  collect (format NIL "-L~a" (make-pathname :name NIL :type NIL :defaults (library-path lib)))
                  collect (format NIL "-l:~a" (pathname-filename (library-path lib)))))
