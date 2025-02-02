@@ -187,7 +187,7 @@
             `(:executable NIL))))
   #+(and asdf3 (not (or ccl sbcl)))
   (progn (setf uiop:*image-entry-point* entry-point)
-         (apply #'uiop:deploy-image file
+         (apply #'uiop:dump-image file
                 (ecase type
                   ((:executable :console)
                    `(:executable T))
