@@ -56,10 +56,13 @@
   ;; FIXME: Maybe use ld.so.cache
   (remove NIL
           (append (library-sources library)
-                  #-ccl (list #+cffi (cffi::foreign-library-handle library))
+                  #+sbcl (list #+cffi (cffi::foreign-library-handle library))
                   #+ccl (let ((handle (cffi::foreign-library-handle library)))
                           (when handle
                             (list (ccl::shlib.pathname handle))))
+                  ;; #+ecl (let ((handle (cffi::foreign-library-handle library)))
+                  ;;         (when handle
+                  ;;           (list (si:codeb))))
                   #+cffi (cffi::foreign-library-search-path library)
                   #+cffi
                   (loop for form in cffi:*foreign-library-directories*
