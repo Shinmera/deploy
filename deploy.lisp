@@ -161,6 +161,9 @@
 (defmethod deploy ((op deploy-image-op) &rest args &key &allow-other-keys)
   (apply #'call-next-method op :type :image args))
 
+(defmethod deploy ((file string) &rest args &key &allow-other-keys)
+  (apply #'deploy (pathname file) args))
+
 (defmethod deploy ((file pathname) &key (type :executable) entry-point)
   ;; Have to do this crap ourselves since UIOP sucks
   #+ccl
