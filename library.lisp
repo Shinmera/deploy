@@ -35,11 +35,17 @@
   ((sources :initarg :sources :initform () :accessor library-sources)
    (path :initarg :path :initform NIL :accessor library-path)
    (dont-open :initarg :dont-open :initform NIL :accessor library-dont-open-p)
-   (dont-deploy :initarg :dont-deploy :initform NIL :accessor library-dont-deploy-p)))
+   (dont-deploy :initarg :dont-deploy :writer (setf library-dont-deploy-p))))
 
 (defmethod print-object ((library library) stream)
   (print-unreadable-object (library stream :type T)
     (format stream "~a" (library-name library))))
+
+(defmethod library-dont-deploy-p ((library library))
+  (if (slot-boundp library 'dont-deploy)
+      (slot-value library 'dont-deploy)
+      (when (boundp 'cl-user::*foreign-system-libraries*)
+        (find (library-name library) (symbol-value 'cl-user::*foreign-system-libraries*)))))
 
 (defmethod possible-pathnames ((library library))
   (let ((paths (list (make-lib-pathname (format NIL "*~(~a~)*" (library-name library))))))
@@ -115,6 +121,9 @@
 (defmethod shared-initialize :after ((library library) slots &key)
   (unless (library-path library)
     (setf (library-path library) (find-source-file library))))
+
+(defmethod library-dont-deploy-p (library)
+  (library-dont-deploy-p (ensure-library library)))
 
 (defmethod library-name ((library library))
   #+cffi (cffi:foreign-library-name library))
