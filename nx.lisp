@@ -23,6 +23,17 @@
       (cons
        (interpret)))))
 
+(define-hook (:build finalize-clos) ()
+  (flet ((maybe-finalize (fun)
+           (when (typep fun 'generic-function)
+             (sb-pcl::set-funcallable-instance-function
+              fun (sb-pcl::make-final-caching-dfun fun nil nil)))))
+    (do-all-symbols (symbol)
+      (when (fboundp symbol)
+        (handler-case
+            (maybe-finalize (fdefinition symbol))
+          (error () (status 3 "Failed to finalize ~a" symbol)))))))
+
 (define-hook (:boot stub-nx most-positive-fixnum) ()
   (status 1 "Stubbing out functions for the NX environment")
   (sb-ext:with-unlocked-packages ("CL" "SB-C")
