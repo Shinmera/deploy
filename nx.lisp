@@ -2,6 +2,9 @@
 
 (setf *features* (delete :sb-core-compression *features*))
 
+#+cffi
+(pushnew '(:nx . ".nro") cffi::*cffi-feature-suffix-map*)
+
 (defun interpret-compile (name &optional (definition (or (and (symbolp name) (macro-function name))
                                                          (fdefinition name))))
   (flet ((interpret ()
