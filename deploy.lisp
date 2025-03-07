@@ -25,6 +25,19 @@
       (T (:default "libz")))
     (define-library compression-lib)))
 
+#+sbcl
+(define-hook (:build finalize-clos) ()
+  (flet ((maybe-finalize (fun)
+           (when (and (typep fun 'generic-function)
+                      (not (sb-pcl::special-case-for-compute-discriminating-function-p fun)))
+             (multiple-value-bind (dfun cache info) (sb-pcl::make-final-dfun-internal fun)
+               (sb-pcl::update-dfun fun dfun cache info)))))
+    (do-all-symbols (symbol)
+      (when (fboundp symbol)
+        (handler-case
+            (maybe-finalize (fdefinition symbol))
+          (error () (status 3 "Failed to finalize ~a" symbol)))))))
+
 (defun call-entry-prepared (entry-point &rest args)
   ;; We don't handle anything here unless we have no other
   ;; choice, as that should otherwise be up to the user.
