@@ -58,6 +58,7 @@
 (defun run-hooks (type &rest args)
   (loop for hook in *hooks*
         do (when (eql type (hook-type hook))
+             #+nx (status 1 "Running ~a/~s" type (hook-name hook))
              (restart-case (apply (hook-function hook) args)
                (report-error (&optional err)
                  :report "Print the error and continue running hooks."
