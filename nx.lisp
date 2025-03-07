@@ -28,9 +28,10 @@
 
 (define-hook (:build finalize-clos) ()
   (flet ((maybe-finalize (fun)
-           (when (typep fun 'generic-function)
-             (sb-pcl::set-funcallable-instance-function
-              fun (sb-pcl::make-final-caching-dfun fun nil nil)))))
+           (when (and (typep fun 'generic-function)
+                      (not (sb-pcl::special-case-for-compute-discriminating-function-p fun)))
+             (multiple-value-bind (dfun cache info) (sb-pcl::make-final-dfun-internal fun)
+               (sb-pcl::update-dfun fun dfun cache info)))))
     (do-all-symbols (symbol)
       (when (fboundp symbol)
         (handler-case
