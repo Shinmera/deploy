@@ -26,7 +26,7 @@
     (define-library compression-lib)))
 
 #+sbcl
-(define-hook (:build finalize-clos) ()
+(define-hook (:build finalize-clos -10000000000) ()
   (labels ((finalize-function (fun)
              (when (and (typep fun 'generic-function)
                         (not (sb-pcl::special-case-for-compute-discriminating-function-p fun)))
