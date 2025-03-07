@@ -27,16 +27,24 @@
 
 #+sbcl
 (define-hook (:build finalize-clos) ()
-  (flet ((maybe-finalize (fun)
-           (when (and (typep fun 'generic-function)
-                      (not (sb-pcl::special-case-for-compute-discriminating-function-p fun)))
-             (multiple-value-bind (dfun cache info) (sb-pcl::make-final-dfun-internal fun)
-               (sb-pcl::update-dfun fun dfun cache info)))))
+  (labels ((finalize-function (fun)
+             (when (and (typep fun 'generic-function)
+                        (not (sb-pcl::special-case-for-compute-discriminating-function-p fun)))
+               (multiple-value-bind (dfun cache info) (sb-pcl::make-final-dfun-internal fun)
+                 (sb-pcl::update-dfun fun dfun cache info))))
+           (finalize-class (class)
+             (unless (sb-mop:class-finalized-p class)
+               (sb-mop:finalize-inheritance class)
+               (dolist (class (sb-mop:class-direct-subclasses class))
+                 (finalize-class class)))))
+    (do-all-symbols (symbol)
+      (when (find-class symbol NIL)
+        (handler-case (finalize-class (find-class symbol))
+          (error () (status 3 "Failed to finalize class ~a" symbol)))))
     (do-all-symbols (symbol)
       (when (fboundp symbol)
-        (handler-case
-            (maybe-finalize (fdefinition symbol))
-          (error () (status 3 "Failed to finalize ~a" symbol)))))))
+        (handler-case (finalize-function (fdefinition symbol))
+          (error () (status 3 "Failed to finalize function ~a" symbol)))))))
 
 (defun call-entry-prepared (entry-point &rest args)
   ;; We don't handle anything here unless we have no other
