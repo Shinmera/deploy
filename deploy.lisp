@@ -36,7 +36,9 @@
              (unless (sb-mop:class-finalized-p class)
                (sb-mop:finalize-inheritance class)
                (dolist (class (sb-mop:class-direct-subclasses class))
-                 (finalize-class class)))))
+                 (finalize-class class)))
+             (when (typep class 'standard-class)
+               (sb-mop:compute-slots class))))
     (do-all-symbols (symbol)
       (when (find-class symbol NIL)
         (handler-case (finalize-class (find-class symbol))
@@ -44,7 +46,13 @@
     (do-all-symbols (symbol)
       (when (fboundp symbol)
         (handler-case (finalize-function (fdefinition symbol))
-          (error () (status 3 "Failed to finalize function ~a" symbol)))))))
+          (error () (status 3 "Failed to finalize function ~a" symbol))))
+      (when (fboundp `(setf ,symbol))
+        (handler-case (finalize-function (fdefinition `(setf ,symbol)))
+          (error () (status 3 "Failed to finalize function ~a" `(setf ,symbol))))))
+    (loop for v being the hash-values of sb-pcl::*all-ctors*
+          do (sb-pcl::install-initial-constructor v)
+             (ignore-errors (sb-pcl::install-optimized-constructor v)))))
 
 (defun call-entry-prepared (entry-point &rest args)
   ;; We don't handle anything here unless we have no other
