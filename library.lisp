@@ -39,7 +39,7 @@
 
 (defmethod print-object ((library library) stream)
   (print-unreadable-object (library stream :type T)
-    (format stream "~a" (library-name library))))
+    (format stream "~s" (library-name library))))
 
 (defmethod library-dont-deploy-p ((library library))
   (if (slot-boundp library 'dont-deploy)
