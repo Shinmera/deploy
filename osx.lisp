@@ -10,17 +10,26 @@
   ())
 
 (defmethod asdf:output-files ((o osx-app-deploy-op) (c asdf:system))
-  (destructuring-bind (file dir) (call-next-method)
+  (destructuring-bind (file) (call-next-method)
+    (let ((info (merge-pathnames (format NIL "~a.app/Contents/Info.plist" (asdf:component-name c))
+                                 file)))
+      (ensure-directories-exist info)
+      (with-open-file (out info
+                           :direction :output
+                           :if-exists :supersede
+                           :if-does-not-exist :create)
+        (write-sequence (parse-info-plist c) out)))
     (values (list (merge-pathnames (format NIL "~a.app/Contents/MacOS/" (asdf:component-name c)) file)
-                  (merge-pathnames (format NIL "~a.app/Contents/Resources/" (asdf:component-name c)) dir))
+                  (merge-pathnames (format NIL "~a.app/Contents/Resources/" (asdf:component-name c)) file))
             T)))
 
-(define-hook (:deploy osx-app-plist) (directory system op)
-  (when (typep op 'osx-app-deploy-op)
-    (with-open-file (out (merge-pathnames "../Info.plist" directory)
-                         :direction :output
-                         :if-exists :supersede)
-      (write-sequence (parse-info-plist system) out))))
+(defmethod output-file :around ((o osx-app-deploy-op))
+  (let* ((file (call-next-method))
+         (new-dir (append (pathname-directory file)
+                          (list (format NIL "~A.app" (pathname-name file))
+                                "Contents"
+                                "MacOS"))))
+    (make-pathname :directory new-dir :defaults file)))
 
 (defun parse-info-plist (system &optional (template *info-plist-template*))
   (with-open-file (in template
