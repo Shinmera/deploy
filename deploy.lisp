@@ -52,7 +52,10 @@
           (error () (status 3 "Failed to finalize function ~a" `(setf ,symbol))))))
     (loop for v being the hash-values of sb-pcl::*all-ctors*
           do (sb-pcl::install-initial-constructor v)
-             (ignore-errors (sb-pcl::install-optimized-constructor v)))))
+             (ignore-errors
+              (ecase (sb-pcl::ctor-type v)
+                (sb-pcl::ctor (sb-pcl::install-optimized-constructor v))
+                (sb-pcl::allocator (sb-pcl::install-optimized-allocator v)))))))
 
 (defun call-entry-prepared (entry-point &rest args)
   ;; We don't handle anything here unless we have no other
