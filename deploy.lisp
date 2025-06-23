@@ -213,11 +213,11 @@
   #+sbcl
   (apply #'sb-ext:save-lisp-and-die file
          :toplevel entry-point
+         #+sb-core-compression :compression #+sb-core-compression *compression-factor*
          (ecase type
            ((:executable :console)
             `(:executable T
-                          #+(and sbcl windows) ,@(list :application-type (if (eql type :executable) :gui :console))
-                          #+sb-core-compression ,@(list :compression *compression-factor*)))
+                          #+(and sbcl windows) ,@(list :application-type (if (eql type :executable) :gui :console))))
            (:image
             `(:executable NIL))))
   #+(and asdf3 (not (or ccl sbcl)))
