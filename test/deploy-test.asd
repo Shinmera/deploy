@@ -5,9 +5,9 @@
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :maintainer "Yukari Hafner <shinmera@tymoon.eu>"
   :description "Test system for deployment."
-  :homepage "https://Shinmera.github.io/deploy/"
-  :bug-tracker "https://github.com/Shinmera/deploy/issues"
-  :source-control (:git "https://github.com/Shinmera/deploy.git")
+  :homepage "https://shinmera.com/docs/deploy/"
+  :bug-tracker "https://shinmera.com/project/deploy/issues"
+  :source-control (:git "https://shinmera.com/project/deploy.git")
   :serial T
   :components ((:file "test"))
   :depends-on (:cl-mpg123

@@ -4,9 +4,9 @@
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :maintainer "Yukari Hafner <shinmera@tymoon.eu>"
   :description "Tools to aid in the deployment of a fully standalone application."
-  :homepage "https://Shinmera.github.io/deploy/"
-  :bug-tracker "https://github.com/Shinmera/deploy/issues"
-  :source-control (:git "https://github.com/Shinmera/deploy.git")
+  :homepage "https://shinmera.com/docs/deploy/"
+  :bug-tracker "https://shinmera.com/project/deploy/issues"
+  :source-control (:git "https://shinmera.com/project/deploy.git")
   :serial T
   :components ((:file "package")
                (:file "toolkit")

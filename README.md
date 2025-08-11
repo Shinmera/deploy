@@ -42,7 +42,7 @@ Sometimes you might want to designate a specific library for deployment, rather 
   :system :system-name-that-defines-the-library)
 ```
 
-For example, the [cl-mpg123](https://github.com/Shirakumo/cl-mpg123) system provides a single library, which we would annotate like this:
+For example, the [cl-mpg123](https://shirakumo.org/project/cl-mpg123) system provides a single library, which we would annotate like this:
 
 ```lisp
 (deploy:define-library cl-mpg123-cffi:libmpg123
